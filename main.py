@@ -1,10 +1,27 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from models import Member, Trainer, FitnessClass, Transaction, FitnessManagementSystem
 import uuid
+
+# Import datetime properly to avoid conflicts
+import datetime as dt
 from datetime import datetime, timedelta
+
+# Import matplotlib with better error handling
+try:
+    import matplotlib
+    matplotlib.use('TkAgg')  # Set backend before importing pyplot
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    MATPLOTLIB_AVAILABLE = True
+    print("Matplotlib loaded successfully")
+except ImportError as e:
+    print(f"Warning: matplotlib not available: {e}")
+    MATPLOTLIB_AVAILABLE = False
+except Exception as e:
+    print(f"Warning: matplotlib error: {e}")
+    MATPLOTLIB_AVAILABLE = False
+
+from models import Member, Trainer, FitnessClass, Transaction, FitnessManagementSystem
 
 class SmartFitnessApp:
     def __init__(self, root):
@@ -16,7 +33,10 @@ class SmartFitnessApp:
         
         # Set window icon and make it resizable
         self.root.minsize(1200, 700)
-        self.root.state('zoomed')  # Maximize on Windows
+        try:
+            self.root.state('zoomed')  # Maximize on Windows
+        except:
+            pass  # Handle case where zoomed is not available
         
         # Create sample data for testing
         self._create_sample_data()
@@ -294,11 +314,12 @@ class SmartFitnessApp:
         self.system.register_member(member2)
         self.system.register_member(member3)
         
-        # Add workout data
+        # Add workout data with proper datetime objects
+        current_time = datetime.now()
         member1.workouts = [
             {
                 "id": str(uuid.uuid4()),
-                "date": datetime.now() - timedelta(days=1),
+                "date": current_time - timedelta(days=1),
                 "exercise_type": "Running",
                 "duration": 30,
                 "calories": 350,
@@ -306,7 +327,7 @@ class SmartFitnessApp:
             },
             {
                 "id": str(uuid.uuid4()),
-                "date": datetime.now() - timedelta(days=3),
+                "date": current_time - timedelta(days=3),
                 "exercise_type": "Weight Lifting",
                 "duration": 45,
                 "calories": 200,
@@ -317,7 +338,7 @@ class SmartFitnessApp:
         member2.workouts = [
             {
                 "id": str(uuid.uuid4()),
-                "date": datetime.now() - timedelta(days=2),
+                "date": current_time - timedelta(days=2),
                 "exercise_type": "Yoga",
                 "duration": 60,
                 "calories": 180,
@@ -325,7 +346,7 @@ class SmartFitnessApp:
             }
         ]
         
-        # Add goals
+        # Add goals with proper datetime objects
         member1.goals = [
             {
                 "id": str(uuid.uuid4()),
@@ -334,17 +355,17 @@ class SmartFitnessApp:
                 "start_value": "0",
                 "duration": 4,
                 "duration_unit": "Weeks",
-                "created": datetime.now() - timedelta(days=5),
-                "end_date": datetime.now() + timedelta(weeks=4),
+                "created": current_time - timedelta(days=5),
+                "end_date": current_time + timedelta(weeks=4),
                 "progress": 27.5
             }
         ]
         
-        # Add meals
+        # Add meals with proper datetime objects
         member1.meals = [
             {
                 "id": str(uuid.uuid4()),
-                "date": datetime.now(),
+                "date": current_time,
                 "meal_type": "Breakfast",
                 "food_items": "Oatmeal with fruits",
                 "calories": 350,
@@ -1339,10 +1360,17 @@ class SmartFitnessApp:
         # Calculate total workouts
         total_workouts = 0
         total_calories = 0
+        exercise_data = {}
+        
         for member in self.system.view_members():
             if hasattr(member, 'workouts') and member.workouts:
                 total_workouts += len(member.workouts)
                 total_calories += sum(w.get('calories', 0) for w in member.workouts)
+                
+                # Collect exercise type data
+                for workout in member.workouts:
+                    ex_type = workout.get('exercise_type', 'Unknown')
+                    exercise_data[ex_type] = exercise_data.get(ex_type, 0) + 1
         
         tk.Label(report_frame, text=f"Total Workouts Logged: {total_workouts}", 
                bg="white", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
@@ -1361,6 +1389,43 @@ class SmartFitnessApp:
         if most_active:
             tk.Label(report_frame, text=f"Most Active Member: {most_active.name} ({max_workouts} workouts)", 
                    bg="white", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
+        
+        # Add chart if matplotlib is available and we have data
+        if MATPLOTLIB_AVAILABLE and total_workouts > 0 and exercise_data:
+            try:
+                # Create a simple chart
+                fig = plt.Figure(figsize=(8, 4), dpi=100)
+                ax = fig.add_subplot(111)
+                
+                exercise_types = list(exercise_data.keys())
+                exercise_counts = list(exercise_data.values())
+                
+                bars = ax.bar(exercise_types, exercise_counts)
+                ax.set_title('Exercise Type Distribution')
+                ax.set_ylabel('Number of Workouts')
+                
+                # Rotate x-axis labels for better readability
+                plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+                
+                # Add value labels on bars
+                for bar in bars:
+                    height = bar.get_height()
+                    ax.text(bar.get_x() + bar.get_width()/2., height,
+                           f'{int(height)}', ha='center', va='bottom')
+                
+                fig.tight_layout()
+                
+                canvas_chart = FigureCanvasTkAgg(fig, report_frame)
+                canvas_chart.draw()
+                canvas_chart.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=15)
+                
+            except Exception as e:
+                print(f"Chart generation error: {str(e)}")
+                tk.Label(report_frame, text="Chart could not be generated", 
+                       bg="white", fg="orange").pack(pady=5)
+        elif not MATPLOTLIB_AVAILABLE:
+            tk.Label(report_frame, text="Install matplotlib to view charts: pip install matplotlib", 
+                   bg="white", fg="gray", font=("Arial", 10)).pack(pady=5)
 
     def _generate_nutrition_report(self):
         """Generate nutrition report"""
@@ -1417,16 +1482,39 @@ class SmartFitnessApp:
             tk.Label(report_frame, text=f"{membership_type}: {count} members", 
                    bg="white", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
 
+    def _calculate_end_date(self, duration, duration_unit, start_date=None):
+        """Calculate the end date based on duration and unit"""
+        if start_date is None:
+            start_date = datetime.now()
+            
+        if duration_unit == "Days":
+            return start_date + timedelta(days=duration)
+        elif duration_unit == "Weeks":
+            return start_date + timedelta(weeks=duration)
+        elif duration_unit == "Months":
+            # Approximating months as 30 days
+            return start_date + timedelta(days=duration * 30)
+        return start_date
+
 def main():
     try:
         print("Starting Smart Fitness Management System...")
+        
+        # Check if matplotlib is available
+        if not MATPLOTLIB_AVAILABLE:
+            print("Warning: Charts and graphs will not be available without matplotlib")
+            print("To install matplotlib, run: pip install matplotlib")
+        
         root = tk.Tk()
         print("Tkinter initialized successfully")
         
         # Set window to appear in front
-        root.attributes('-topmost', True)
-        root.update()
-        root.attributes('-topmost', False)
+        try:
+            root.attributes('-topmost', True)
+            root.update()
+            root.attributes('-topmost', False)
+        except:
+            pass  # Handle cases where this might not work
         
         # Create the application
         print("Creating application...")
@@ -1436,9 +1524,11 @@ def main():
         
         # Start the main loop
         root.mainloop()
+        
     except ImportError as e:
         print(f"ERROR: Required module not found: {e}")
         print("Please make sure you've installed all required packages:")
+        print("Try running these commands:")
         print("pip install matplotlib")
         input("Press Enter to exit...")
     except Exception as e:
