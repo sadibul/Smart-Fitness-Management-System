@@ -1233,30 +1233,114 @@ class SmartFitnessApp:
         page_title = tk.Label(title_frame, text="Nutrition & Diet Tracking", font=("Arial", 20, "bold"), bg="#f0f0f0")
         page_title.pack(side=tk.LEFT)
         
-        # Create a notebook for nutrition tracking
-        notebook = ttk.Notebook(self.content_frame)
-        notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        # Create custom button navigation instead of notebook
+        nav_frame = tk.Frame(self.content_frame, bg="white", height=80)
+        nav_frame.pack(fill=tk.X, padx=20, pady=10)
+        nav_frame.pack_propagate(False)
         
-        # Tab 1: Log Meals
-        log_meals_frame = tk.Frame(notebook, bg="white")
-        notebook.add(log_meals_frame, text="Log Meals")
+        # Content frame for different sections
+        content_frame = tk.Frame(self.content_frame, bg="white")
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
         
-        # Tab 2: Meal History
-        meal_history_frame = tk.Frame(notebook, bg="white")
-        notebook.add(meal_history_frame, text="Meal History")
+        # Variable to track current view
+        current_view = tk.StringVar(value="log_meals")
         
-        # Tab 3: Nutrition Analysis
-        nutrition_analysis_frame = tk.Frame(notebook, bg="white")
-        notebook.add(nutrition_analysis_frame, text="Nutrition Analysis")
+        # Create styled navigation buttons
+        button_style = {
+            'font': ("Segoe UI", 12, "bold"),
+            'bd': 0,
+            'pady': 15,
+            'padx': 25,
+            'cursor': "hand2",
+            'relief': tk.FLAT,
+            'width': 18,
+            'height': 2
+        }
         
-        # Create meal logging form
-        self._create_meal_log_tab(log_meals_frame)
+        def switch_view(view_name):
+            current_view.set(view_name)
+            # Clear content frame
+            for widget in content_frame.winfo_children():
+                widget.destroy()
+            
+            # Update button styles
+            for btn, view in button_views:
+                if view == view_name:
+                    btn.configure(bg=self.colors['success'], fg="white")
+                else:
+                    btn.configure(bg=self.colors['light'], fg=self.colors['text'])
+            
+            # Show appropriate content
+            if view_name == "log_meals":
+                self._create_meal_log_tab(content_frame)
+            elif view_name == "meal_history":
+                self._create_meal_history_tab(content_frame)
+            elif view_name == "nutrition_analysis":
+                self._create_nutrition_analysis_tab(content_frame)
         
-        # Create meal history tab
-        self._create_meal_history_tab(meal_history_frame)
+        # Create navigation buttons with modern styling
+        log_meals_btn = tk.Button(
+            nav_frame,
+            text="🍽️ Log Meals",
+            command=lambda: switch_view("log_meals"),
+            bg=self.colors['success'],
+            fg="white",
+            **button_style
+        )
+        log_meals_btn.pack(side=tk.LEFT, padx=10, pady=15)
         
-        # Create nutrition analysis tab
-        self._create_nutrition_analysis_tab(nutrition_analysis_frame)
+        meal_history_btn = tk.Button(
+            nav_frame,
+            text="📊 Meal History",
+            command=lambda: switch_view("meal_history"),
+            bg=self.colors['light'],
+            fg=self.colors['text'],
+            **button_style
+        )
+        meal_history_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        nutrition_analysis_btn = tk.Button(
+            nav_frame,
+            text="📈 Nutrition Analysis",
+            command=lambda: switch_view("nutrition_analysis"),
+            bg=self.colors['light'],
+            fg=self.colors['text'],
+            **button_style
+        )
+        nutrition_analysis_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        # Store button references for style updates
+        button_views = [
+            (log_meals_btn, "log_meals"),
+            (meal_history_btn, "meal_history"),
+            (nutrition_analysis_btn, "nutrition_analysis")
+        ]
+        
+        # Add hover effects to buttons
+        def create_hover_effect(button, active_view):
+            def on_enter(e):
+                if current_view.get() != active_view:
+                    button.configure(bg=self._darken_color(self.colors['light']))
+            
+            def on_leave(e):
+                if current_view.get() != active_view:
+                    button.configure(bg=self.colors['light'])
+                elif current_view.get() == active_view:
+                    button.configure(bg=self.colors['success'])
+            
+            button.bind("<Enter>", on_enter)
+            button.bind("<Leave>", on_leave)
+        
+        # Apply hover effects
+        create_hover_effect(meal_history_btn, "meal_history")
+        create_hover_effect(nutrition_analysis_btn, "nutrition_analysis")
+        
+        # Add visual separator
+        separator = tk.Frame(nav_frame, bg=self.colors['accent'], height=3)
+        separator.pack(fill=tk.X, padx=20, pady=(0, 10), side=tk.BOTTOM)
+        
+        # Initialize with log meals view
+        self._create_meal_log_tab(content_frame)
 
     def _create_meal_log_tab(self, parent):
         """Create enhanced meal logging form"""
@@ -1662,7 +1746,7 @@ class SmartFitnessApp:
                 text=f"Nutrition Summary for {member.name}",
                 font=("Segoe UI", 12, "bold"),
                 bg="white",
-                fg=self.colors['primary']
+                               fg=self.colors['primary']
             )
             stats_frame.pack(fill=tk.X, pady=10)
             
