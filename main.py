@@ -1317,10 +1317,10 @@ class SmartFitnessApp:
         options_frame = tk.Frame(self.content_frame, bg="white", padx=15, pady=15)
         options_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        # Report selection
+        # Report selection - removed "Revenue Report"
         tk.Label(options_frame, text="Select Report Type:", bg="white", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
         report_var = tk.StringVar(value="Fitness Report")
-        report_types = ["Fitness Report", "Nutrition Report", "Revenue Report", "Membership Analysis"]
+        report_types = ["Fitness Report", "Nutrition Report", "Membership Analysis"]
         
         for report_type in report_types:
             rb = tk.Radiobutton(options_frame, text=report_type, variable=report_var, 
@@ -1342,8 +1342,6 @@ class SmartFitnessApp:
                 self._generate_fitness_report()
             elif report_type == "Nutrition Report":
                 self._generate_nutrition_report()
-            elif report_type == "Revenue Report":
-                self._generate_revenue_report()
             elif report_type == "Membership Analysis":
                 self._generate_membership_analysis()
         
@@ -1443,24 +1441,6 @@ class SmartFitnessApp:
         tk.Label(report_frame, text=f"Total Meals Logged: {total_meals}", 
                bg="white", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
         tk.Label(report_frame, text=f"Total Calories Consumed: {total_calories}", 
-               bg="white", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
-
-    def _generate_revenue_report(self):
-        """Generate revenue report"""
-        report_frame = tk.LabelFrame(self.reports_frame, text="Revenue Report", bg="white", 
-                                   padx=15, pady=15, font=("Arial", 12))
-        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-        
-        report_data = self.system.generate_revenue_report()
-        
-        tk.Label(report_frame, text=f"Total Revenue: ${report_data['total_revenue']:.2f}", 
-               bg="white", font=("Arial", 14, "bold")).pack(anchor=tk.W, pady=10)
-        
-        if report_data['top_class']:
-            tk.Label(report_frame, text=f"Top Class: {report_data['top_class'][0]} ({report_data['top_class'][1]} members)", 
-                   bg="white", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
-        
-        tk.Label(report_frame, text=f"Active Members: {report_data['active_members']}", 
                bg="white", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
 
     def _generate_membership_analysis(self):
