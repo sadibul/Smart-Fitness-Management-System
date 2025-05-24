@@ -605,12 +605,45 @@ class SmartFitnessApp:
                              value=report_type, bg="white", font=("Arial", 11))
             rb.pack(anchor=tk.W, pady=3)
         
+        # Create a scrollable frame for reports
+        reports_canvas_frame = tk.Frame(self.content_frame, bg="#f0f0f0")
+        reports_canvas_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        
+        # Create canvas and scrollbar
+        canvas = tk.Canvas(reports_canvas_frame, bg="#f0f0f0", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(reports_canvas_frame, orient=tk.VERTICAL, command=canvas.yview)
+        
+        # Create a frame inside the canvas to hold the reports
+        self.reports_frame = tk.Frame(canvas, bg="#f0f0f0")
+        
+        # Place the canvas and scrollbar
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Configure the canvas
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas_frame = canvas.create_window((0, 0), window=self.reports_frame, anchor=tk.NW)
+        
+        # Bind canvas resize to update the scroll region
+        def configure_canvas(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_frame, width=event.width)
+        
+        self.reports_frame.bind("<Configure>", configure_canvas)
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(canvas_frame, width=e.width))
+        
+        # Enable mousewheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
         # Generate button
         def generate_report():
             report_type = report_var.get()
-            report_content_frame = tk.LabelFrame(self.content_frame, text=f"{report_type}", bg="white", 
+            report_content_frame = tk.LabelFrame(self.reports_frame, text=f"{report_type}", bg="white", 
                                               padx=15, pady=15, font=("Arial", 12))
-            report_content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+            report_content_frame.pack(fill=tk.X, expand=True, padx=20, pady=10)
             
             if report_type == "Revenue Report":
                 # Get revenue report data
@@ -640,9 +673,9 @@ class SmartFitnessApp:
                 ax.set_ylabel('Number of Members')
                 ax.grid(True, axis='y', linestyle='--', alpha=0.7)
                 
-                canvas = FigureCanvasTkAgg(fig, report_content_frame)
-                canvas.draw()
-                canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=15)
+                canvas_chart = FigureCanvasTkAgg(fig, report_content_frame)
+                canvas_chart.draw()
+                canvas_chart.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=15)
             
             elif report_type == "Fitness Report" or report_type == "Nutrition Report":
                 # Member selection for individual reports
@@ -654,6 +687,10 @@ class SmartFitnessApp:
                 member_combo = ttk.Combobox(member_frame, textvariable=member_var, width=30)
                 member_combo['values'] = [f"{m.member_id} - {m.name}" for m in self.system.view_members()]
                 member_combo.pack(side=tk.LEFT, padx=5)
+                
+                # Frame to hold the report details
+                report_details_frame = tk.Frame(report_content_frame, bg="white")
+                report_details_frame.pack(fill=tk.BOTH, expand=True, pady=10)
                 
                 def show_member_report():
                     if not member_var.get():
@@ -696,9 +733,9 @@ class SmartFitnessApp:
                         ax.set_ylabel('Number of Workouts')
                         ax.grid(True, linestyle='--', alpha=0.7)
                         
-                        canvas = FigureCanvasTkAgg(fig, report_details_frame)
-                        canvas.draw()
-                        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=15)
+                        canvas_chart = FigureCanvasTkAgg(fig, report_details_frame)
+                        canvas_chart.draw()
+                        canvas_chart.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=15)
                     
                     elif report_type == "Nutrition Report":
                         # Just a placeholder chart - in a real app, you would use actual nutrition data
@@ -713,17 +750,13 @@ class SmartFitnessApp:
                              colors=['#3498db', '#2ecc71', '#e74c3c'])
                         ax.set_title('Macronutrient Distribution')
                         
-                        canvas = FigureCanvasTkAgg(fig, report_details_frame)
-                        canvas.draw()
-                        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=15)
+                        canvas_chart = FigureCanvasTkAgg(fig, report_details_frame)
+                        canvas_chart.draw()
+                        canvas_chart.get_tk_widget().pack(fill=tk.BOTH, expand=True, pady=15)
                 
                 view_btn = tk.Button(member_frame, text="View Report", bg="#3498db", fg="white",
                                  command=show_member_report)
                 view_btn.pack(side=tk.LEFT, padx=10)
-                
-                # Frame to hold the report details
-                report_details_frame = tk.Frame(report_content_frame, bg="white")
-                report_details_frame.pack(fill=tk.BOTH, expand=True, pady=10)
                 
             else:  # Membership Analysis
                 # Display overall membership statistics
@@ -747,9 +780,9 @@ class SmartFitnessApp:
                      colors=['#3498db', '#e67e22', '#9b59b6'])
                 ax.set_title('Membership Type Distribution')
                 
-                canvas = FigureCanvasTkAgg(fig, report_content_frame)
-                canvas.draw()
-                canvas.get_tk_widget().pack(pady=15)
+                canvas_chart = FigureCanvasTkAgg(fig, report_content_frame)
+                canvas_chart.draw()
+                canvas_chart.get_tk_widget().pack(pady=15)
                 
                 # Show some mock statistics
                 stats_frame = tk.Frame(report_content_frame, bg="white")
