@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from models import Member, Trainer, FitnessClass, Transaction, FitnessManagementSystem
 import uuid
-import sys
 
 class SmartFitnessApp:
     def __init__(self, root):
@@ -40,7 +39,6 @@ class SmartFitnessApp:
         self._create_menu_button("Goal Tracking", self.show_goal_tracking)
         self._create_menu_button("Nutrition Tracking", self.show_nutrition_tracking)
         self._create_menu_button("Reports & Analytics", self.show_reports)
-        self._create_menu_button("Switch to Text Mode", self.switch_to_text_mode)
         self._create_menu_button("Exit", self.root.destroy)
         
         # Show user management by default
@@ -166,7 +164,7 @@ class SmartFitnessApp:
         # Member ID
         tk.Label(form_frame, text="Member ID:", bg="#f0f0f0").grid(row=0, column=0, sticky=tk.W, pady=5)
         member_id_var = tk.StringVar(value=f"M{str(uuid.uuid4().int)[:3]}")
-        member_id_entry = tk.Entry(form_frame, textvariable=member_id_var)
+        member_id_entry = tk.Entry(form_frame, textvariable=member_id_var, state='readonly')
         member_id_entry.grid(row=0, column=1, sticky=tk.W, pady=5)
         
         # Name
@@ -773,165 +771,6 @@ class SmartFitnessApp:
                               font=("Arial", 12), padx=10, pady=5, command=generate_report)
         generate_btn.pack(pady=15)
     
-    def switch_to_text_mode(self):
-        confirm = messagebox.askyesno("Switch Interface", 
-                                    "Are you sure you want to switch to text-based interface?")
-        if confirm:
-            self.root.withdraw()  # Hide the GUI window
-            self.run_text_interface()
-    
-    def run_text_interface(self):
-        print("\nWelcome to Smart Fitness Management System (Text Mode)")
-        
-        while True:
-            print("\nMain Menu:")
-            print("1. Register New Member")
-            print("2. View All Members")
-            print("3. Book a Fitness Class")
-            print("4. Process Payment")
-            print("5. Generate Revenue Report")
-            print("6. View Member Progress")
-            print("7. Switch to GUI Mode")
-            print("8. Exit")
-            
-            choice = input("\nEnter your choice (1-8): ")
-            
-            if choice == '1':
-                self.text_register_member()
-            elif choice == '2':
-                self.text_view_members()
-            elif choice == '3':
-                self.text_book_class()
-            elif choice == '4':
-                self.text_process_payment()
-            elif choice == '5':
-                self.text_generate_revenue_report()
-            elif choice == '6':
-                self.text_view_member_progress()
-            elif choice == '7':
-                print("Switching to GUI mode...")
-                self.root.deiconify()  # Show the GUI window again
-                break
-            elif choice == '8':
-                print("Thank you for using SFMS. Goodbye!")
-                self.root.destroy()
-                sys.exit(0)
-            else:
-                print("Invalid choice. Please try again.")
-    
-    def text_register_member(self):
-        print("\n--- Register New Member ---")
-        member_id = input("Enter Member ID: ")
-        name = input("Enter Name: ")
-        
-        try:
-            age = int(input("Enter Age: "))
-        except ValueError:
-            print("Invalid age. Using default value of 30.")
-            age = 30
-            
-        print("Membership Types: Basic, Premium, VIP")
-        membership_type = input("Enter Membership Type: ")
-        
-        print("Fitness Goals: Weight Loss, Muscle Gain, Endurance")
-        fitness_goals = input("Enter Fitness Goals: ")
-        
-        member = Member(member_id, name, age, membership_type, fitness_goals)
-        if self.system.register_member(member):
-            print(f"Member {name} registered successfully!")
-        else:
-            print("Failed to register member. Member ID may already exist.")
-    
-    def text_view_members(self):
-        print("\n--- All Members ---")
-        members = self.system.view_members()
-        
-        if not members:
-            print("No members found.")
-            return
-            
-        for member in members:
-            print(f"ID: {member.member_id}, Name: {member.name}, Age: {member.age}, " +
-                 f"Membership: {member.membership_type}, Goals: {member.fitness_goals}")
-    
-    def text_book_class(self):
-        print("\n--- Book a Fitness Class ---")
-        member_id = input("Enter Member ID: ")
-        member = self.system.find_member_by_id(member_id)
-        
-        if not member:
-            print("Member not found.")
-            return
-            
-        print("\nAvailable Classes:")
-        for i, cls in enumerate(self.system.fitness_classes):
-            print(f"{i+1}. {cls.name} - {cls.schedule} - {cls.current_enrollments}/{cls.capacity} enrolled")
-        
-        try:
-            class_idx = int(input("\nEnter class number to book: ")) - 1
-            if 0 <= class_idx < len(self.system.fitness_classes):
-                class_obj = self.system.fitness_classes[class_idx]
-                
-                if member.book_class(class_obj) and class_obj.enroll_member(member):
-                    print(f"Successfully booked {class_obj.name} for {member.name}!")
-                else:
-                    print("Failed to book class. Class may be full or already booked.")
-            else:
-                print("Invalid class number.")
-        except ValueError:
-            print("Invalid input. Please enter a number.")
-    
-    def text_process_payment(self):
-        print("\n--- Process Payment ---")
-        member_id = input("Enter Member ID: ")
-        member = self.system.find_member_by_id(member_id)
-        
-        if not member:
-            print("Member not found.")
-            return
-            
-        try:
-            amount = float(input("Enter payment amount: $"))
-            service = input("Enter service description: ")
-            
-            transaction_id = f"T{str(uuid.uuid4().int)[:4]}"
-            transaction = Transaction(transaction_id, member, amount, service)
-            
-            if self.system.add_transaction(transaction):
-                print("Payment processed successfully!")
-                print(transaction.generate_receipt())
-            else:
-                print("Failed to process payment.")
-        except ValueError:
-            print("Invalid amount. Payment cancelled.")
-    
-    def text_generate_revenue_report(self):
-        print("\n--- Revenue Report ---")
-        report = self.system.generate_revenue_report()
-        
-        print(f"Total Revenue: ${report['total_revenue']:.2f}")
-        if report['top_class']:
-            print(f"Top Class: {report['top_class'][0]} ({report['top_class'][1]} members)")
-        print(f"Active Members: {report['active_members']}")
-    
-    def text_view_member_progress(self):
-        print("\n--- View Member Progress ---")
-        member_id = input("Enter Member ID: ")
-        
-        progress_data = self.system.view_member_progress(member_id)
-        
-        if not progress_data:
-            print("No progress data found for this member or member does not exist.")
-            return
-            
-        print(f"Progress Data for Member {member_id}:")
-        for i, data in enumerate(progress_data):
-            print(f"\nEntry {i+1} - {data['date']}:")
-            for key, value in data.items():
-                if key != 'date':
-                    print(f"  {key}: {value}")
-
-
 def main():
     root = tk.Tk()
     app = SmartFitnessApp(root)
