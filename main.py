@@ -1167,27 +1167,117 @@ class SmartFitnessApp:
     def show_goal_tracking(self):
         self._clear_content_frame()
         
-        # Page title
-        title_frame = tk.Frame(self.content_frame, bg="#f0f0f0")
-        title_frame.pack(fill=tk.X, padx=20, pady=20)
+        # Page header
+        header_frame = tk.Frame(self.content_frame, bg=self.colors['white'])
+        header_frame.pack(fill=tk.X, padx=30, pady=20)
         
-        page_title = tk.Label(title_frame, text="Goal Tracking & Progress", font=("Arial", 20, "bold"), bg="#f0f0f0")
-        page_title.pack(side=tk.LEFT)
+        tk.Label(
+            header_frame,
+            text="🎯 Goal Tracking & Progress",
+            font=("Segoe UI", 22, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary']
+        ).pack(side=tk.LEFT)
         
-        # Create a notebook (tabbed interface) for different goal tracking views
-        notebook = ttk.Notebook(self.content_frame)
-        notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        # Create custom button navigation instead of notebook
+        nav_frame = tk.Frame(self.content_frame, bg="white", height=80)
+        nav_frame.pack(fill=tk.X, padx=30, pady=10)
+        nav_frame.pack_propagate(False)
         
-        # Tab 1: Set Goals
-        set_goals_frame = tk.Frame(notebook, bg="white")
-        notebook.add(set_goals_frame, text="Set Goals")
+        # Content frame for different sections
+        content_frame = tk.Frame(self.content_frame, bg="white")
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=10)
         
-        # Tab 2: Monitor Progress
-        monitor_progress_frame = tk.Frame(notebook, bg="white")
-        notebook.add(monitor_progress_frame, text="Monitor Progress")
+        # Variable to track current view
+        current_view = tk.StringVar(value="set_goals")
         
+        # Create styled navigation buttons
+        button_style = {
+            'font': ("Segoe UI", 12, "bold"),
+            'bd': 0,
+            'pady': 15,
+            'padx': 25,
+            'cursor': "hand2",
+            'relief': tk.FLAT,
+            'width': 18,
+            'height': 2
+        }
+        
+        def switch_view(view_name):
+            current_view.set(view_name)
+            # Clear content frame
+            for widget in content_frame.winfo_children():
+                widget.destroy()
+            
+            # Update button styles
+            for btn, view in button_views:
+                if view == view_name:
+                    btn.configure(bg=self.colors['accent'], fg="white")
+                else:
+                    btn.configure(bg=self.colors['light'], fg=self.colors['text'])
+            
+            # Show appropriate content
+            if view_name == "set_goals":
+                self._create_set_goals_tab(content_frame)
+            elif view_name == "monitor_progress":
+                self._create_monitor_progress_tab(content_frame)
+        
+        # Create navigation buttons with modern styling
+        set_goals_btn = tk.Button(
+            nav_frame,
+            text="🎯 Set Goals",
+            command=lambda: switch_view("set_goals"),
+            bg=self.colors['accent'],
+            fg="white",
+            **button_style
+        )
+        set_goals_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        monitor_progress_btn = tk.Button(
+            nav_frame,
+            text="📊 Monitor Progress",
+            command=lambda: switch_view("monitor_progress"),
+            bg=self.colors['light'],
+            fg=self.colors['text'],
+            **button_style
+        )
+        monitor_progress_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        # Store button references for style updates
+        button_views = [
+            (set_goals_btn, "set_goals"),
+            (monitor_progress_btn, "monitor_progress")
+        ]
+        
+        # Add hover effects to buttons
+        def create_hover_effect(button, active_view):
+            def on_enter(e):
+                if current_view.get() != active_view:
+                    button.configure(bg=self._darken_color(self.colors['light']))
+            
+            def on_leave(e):
+                if current_view.get() != active_view:
+                    button.configure(bg=self.colors['light'])
+                elif current_view.get() == active_view:
+                    button.configure(bg=self.colors['accent'])
+            
+            button.bind("<Enter>", on_enter)
+            button.bind("<Leave>", on_leave)
+        
+        # Apply hover effects
+        create_hover_effect(monitor_progress_btn, "monitor_progress")
+        
+        # Add visual separator
+        separator = tk.Frame(nav_frame, bg=self.colors['accent'], height=3)
+        separator.pack(fill=tk.X, padx=20, pady=(0, 10), side=tk.BOTTOM)
+        
+        # Initialize with set goals view
+        self._create_set_goals_tab(content_frame)
+
+    def _create_set_goals_tab(self, parent):
+        """Create the Set Goals tab content"""
         # Simple goal setting form
-        goal_form_frame = tk.LabelFrame(set_goals_frame, text="Set New Goal", bg="white", padx=15, pady=15)
+        goal_form_frame = tk.LabelFrame(parent, text="Set New Goal", bg="white", padx=15, pady=15)
         goal_form_frame.pack(fill=tk.X, padx=20, pady=20)
         
         # Member selection
@@ -1233,6 +1323,35 @@ class SmartFitnessApp:
         
         tk.Button(goal_form_frame, text="Save Goal", bg="#3498db", fg="white",
                  font=("Arial", 12), command=save_goal).pack(pady=10)
+
+    def _create_monitor_progress_tab(self, parent):
+        """Create the Monitor Progress tab content"""
+        monitor_frame = tk.Frame(parent, bg="white")
+        monitor_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        tk.Label(
+            monitor_frame,
+            text="Goal Progress Monitoring",
+            font=("Segoe UI", 16, "bold"),
+            bg="white",
+            fg=self.colors['primary']
+        ).pack(pady=10)
+        
+        tk.Label(
+            monitor_frame,
+            text="Track your fitness goals and monitor progress over time",
+            font=("Segoe UI", 12),
+            bg="white",
+            fg="gray"
+        ).pack(pady=5)
+        
+        # Add more monitoring functionality here as needed
+        tk.Label(
+            monitor_frame,
+            text="Progress monitoring features coming soon...",
+            font=("Segoe UI", 11),
+            bg="white"
+        ).pack(pady=50)
 
     def show_nutrition_tracking(self):
         self._clear_content_frame()
@@ -2041,10 +2160,15 @@ class SmartFitnessApp:
             )
             exercises_frame.pack(fill=tk.X, pady=10)
             
-            for exercise, count in sorted(exercise_types.items(), key=lambda x: x[1], reverse=True)[:5]:
-                percentage = (count / total_workouts) * 100
-                tk.Label(exercises_frame, text=f"• {exercise}: {count} workouts ({percentage:.1f}%)", 
-                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=2)
+            # Sort by workout count
+            top_by_workouts = sorted(exercise_types.items(), key=lambda x: x[1], reverse=True)[:5]
+            
+            tk.Label(exercises_frame, text="Most Active Exercises:", 
+                   bg="white", font=("Segoe UI", 11, "bold")).pack(anchor=tk.W, padx=15, pady=5)
+            
+            for exercise, count in top_by_workouts:
+                tk.Label(exercises_frame, text=f"• {exercise}: {count} workouts", 
+                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=25, pady=2)
 
     def _create_comprehensive_nutrition_report(self, parent):
         """Create comprehensive nutrition report"""
