@@ -1116,8 +1116,6 @@ class SmartFitnessApp:
         scrollable_frame = tk.Frame(canvas, bg=self.colors['white'])
         
         canvas.configure(yscrollcommand=scrollbar.set)
-        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
@@ -1756,7 +1754,7 @@ class SmartFitnessApp:
             # Display statistics
             stats_frame = tk.LabelFrame(
                 results_frame,
-                text=f"Nutrition Summary for {member.name}",
+                text="Nutrition Summary for {member.name}",
                 font=("Segoe UI", 12, "bold"),
                 bg="white",
                 fg=self.colors['primary']
@@ -1851,689 +1849,367 @@ class SmartFitnessApp:
     def show_reports(self):
         self._clear_content_frame()
         
-        # Page title
-        title_frame = tk.Frame(self.content_frame, bg="#f0f0f0")
-        title_frame.pack(fill=tk.X, padx=20, pady=20)
+        # Page header
+        header_frame = tk.Frame(self.content_frame, bg=self.colors['white'])
+        header_frame.pack(fill=tk.X, padx=30, pady=20)
         
-        page_title = tk.Label(title_frame, text="Reports & Analytics", font=("Arial", 20, "bold"), bg="#f0f0f0")
-        page_title.pack(side=tk.LEFT)
+        tk.Label(
+            header_frame,
+            text="📊 Reports & Analytics",
+            font=("Segoe UI", 22, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary']
+        ).pack(side=tk.LEFT)
         
-        # Create a notebook for different report types
-        notebook = ttk.Notebook(self.content_frame)
-        notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        # Create custom button navigation instead of notebook
+        nav_frame = tk.Frame(self.content_frame, bg="white", height=80)
+        nav_frame.pack(fill=tk.X, padx=30, pady=10)
+        nav_frame.pack_propagate(False)
         
-        # Tab 1: Fitness Report
-        fitness_report_frame = tk.Frame(notebook, bg="white")
-        notebook.add(fitness_report_frame, text="Fitness Report")
+        # Content frame for different sections
+        content_frame = tk.Frame(self.content_frame, bg="white")
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=10)
         
-        # Tab 2: Nutrition Report
-        nutrition_report_frame = tk.Frame(notebook, bg="white")
-        notebook.add(nutrition_report_frame, text="Nutrition Report")
+        # Variable to track current view
+        current_view = tk.StringVar(value="fitness_report")
         
-        # Tab 3: Performance Analysis
-        performance_frame = tk.Frame(notebook, bg="white")
-        notebook.add(performance_frame, text="Performance Analysis")
+        # Create styled navigation buttons
+        button_style = {
+            'font': ("Segoe UI", 12, "bold"),
+            'bd': 0,
+            'pady': 15,
+            'padx': 25,
+            'cursor': "hand2",
+            'relief': tk.FLAT,
+            'width': 18,
+            'height': 2
+        }
         
-        # Tab 4: Business Analytics
-        business_frame = tk.Frame(notebook, bg="white")
-        notebook.add(business_frame, text="Business Analytics")
+        def switch_view(view_name):
+            current_view.set(view_name)
+            # Clear content frame
+            for widget in content_frame.winfo_children():
+                widget.destroy()
+            
+            # Update button styles
+            for btn, view in button_views:
+                if view == view_name:
+                    btn.configure(bg=self.colors['danger'], fg="white")
+                else:
+                    btn.configure(bg=self.colors['light'], fg=self.colors['text'])
+            
+            # Show appropriate content
+            if view_name == "fitness_report":
+                self._create_comprehensive_fitness_report(content_frame)
+            elif view_name == "nutrition_report":
+                self._create_comprehensive_nutrition_report(content_frame)
+            elif view_name == "performance_analysis":
+                self._create_performance_analysis_report(content_frame)
+            elif view_name == "business_analytics":
+                self._create_business_analytics_report(content_frame)
         
-        # Create comprehensive reports
-        self._create_comprehensive_fitness_report(fitness_report_frame)
-        self._create_comprehensive_nutrition_report(nutrition_report_frame)
-        self._create_performance_analysis_report(performance_frame)
-        self._create_business_analytics_report(business_frame)
+        # Create navigation buttons with modern styling
+        fitness_report_btn = tk.Button(
+            nav_frame,
+            text="🏃 Fitness Report",
+            command=lambda: switch_view("fitness_report"),
+            bg=self.colors['danger'],
+            fg="white",
+            **button_style
+        )
+        fitness_report_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        nutrition_report_btn = tk.Button(
+            nav_frame,
+            text="🥗 Nutrition Report",
+            command=lambda: switch_view("nutrition_report"),
+            bg=self.colors['light'],
+            fg=self.colors['text'],
+            **button_style
+        )
+        nutrition_report_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        performance_analysis_btn = tk.Button(
+            nav_frame,
+            text="📈 Performance Analysis",
+            command=lambda: switch_view("performance_analysis"),
+            bg=self.colors['light'],
+            fg=self.colors['text'],
+            **button_style
+        )
+        performance_analysis_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        business_analytics_btn = tk.Button(
+            nav_frame,
+            text="💼 Business Analytics",
+            command=lambda: switch_view("business_analytics"),
+            bg=self.colors['light'],
+            fg=self.colors['text'],
+            **button_style
+        )
+        business_analytics_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        # Store button references for style updates
+        button_views = [
+            (fitness_report_btn, "fitness_report"),
+            (nutrition_report_btn, "nutrition_report"),
+            (performance_analysis_btn, "performance_analysis"),
+            (business_analytics_btn, "business_analytics")
+        ]
+        
+        # Add hover effects to buttons
+        def create_hover_effect(button, active_view):
+            def on_enter(e):
+                if current_view.get() != active_view:
+                    button.configure(bg=self._darken_color(self.colors['light']))
+            
+            def on_leave(e):
+                if current_view.get() != active_view:
+                    button.configure(bg=self.colors['light'])
+                elif current_view.get() == active_view:
+                    button.configure(bg=self.colors['danger'])
+            
+            button.bind("<Enter>", on_enter)
+            button.bind("<Leave>", on_leave)
+        
+        # Apply hover effects
+        create_hover_effect(nutrition_report_btn, "nutrition_report")
+        create_hover_effect(performance_analysis_btn, "performance_analysis")
+        create_hover_effect(business_analytics_btn, "business_analytics")
+        
+        # Add visual separator
+        separator = tk.Frame(nav_frame, bg=self.colors['accent'], height=3)
+        separator.pack(fill=tk.X, padx=20, pady=(0, 10), side=tk.BOTTOM)
+        
+        # Initialize with fitness report view
+        self._create_comprehensive_fitness_report(content_frame)
 
     def _create_comprehensive_fitness_report(self, parent):
         """Create comprehensive fitness report with real data"""
-        # Member selection
-        selection_frame = tk.Frame(parent, bg="white")
-        selection_frame.pack(fill=tk.X, padx=20, pady=10)
+        report_frame = tk.Frame(parent, bg=self.colors['white'])
+        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        tk.Label(selection_frame, text="Select Member for Detailed Report:", 
-               font=("Segoe UI", 12, "bold"), bg="white").pack(side=tk.LEFT, padx=5)
+        tk.Label(
+            report_frame,
+            text="Comprehensive Fitness Report",
+            font=("Segoe UI", 16, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary']
+        ).pack(pady=10)
         
-        member_var = tk.StringVar()
-        member_combo = ttk.Combobox(selection_frame, textvariable=member_var, width=30)
-        member_combo['values'] = ["All Members"] + [f"{m.member_id} - {m.name}" for m in self.system.view_members()]
-        member_combo.set("All Members")
-        member_combo.pack(side=tk.LEFT, padx=5)
-        
-        # Report content area
-        report_content = tk.Frame(parent, bg="white")
-        report_content.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-        
-        def generate_fitness_report():
-            # Clear previous report
-            for widget in report_content.winfo_children():
-                widget.destroy()
-            
-            # Create scrollable report area
-            canvas = tk.Canvas(report_content, bg="white")
-            scrollbar = ttk.Scrollbar(report_content, orient=tk.VERTICAL, command=canvas.yview)
-            scrollable_frame = tk.Frame(canvas, bg="white")
-            
-            canvas.configure(yscrollcommand=scrollbar.set)
-            canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-            
-            canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-            
-            if member_var.get() == "All Members":
-                self._generate_overall_fitness_summary(scrollable_frame)
-            else:
-                member_id = member_var.get().split(" - ")[0]
-                member = self.system.find_member_by_id(member_id)
-                if member:
-                    self._generate_individual_fitness_report(scrollable_frame, member)
-            
-            # Update scroll region
-            scrollable_frame.update_idletasks()
-            canvas.configure(scrollregion=canvas.bbox("all"))
-            canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_frame, width=e.width))
-        
-        # Generate button
-        self._create_styled_button(
-            selection_frame, "📊 Generate Report", generate_fitness_report, self.colors['success']
-        ).pack(side=tk.LEFT, padx=10)
-        
-        member_combo.bind("<<ComboboxSelected>>", lambda e: generate_fitness_report())
-        
-        # Initial report generation
-        generate_fitness_report()
-
-    def _generate_overall_fitness_summary(self, parent):
-        """Generate overall fitness summary for all members"""
-        # Header
-        header = tk.Label(parent, text="Overall Fitness Summary Report", 
-                         font=("Segoe UI", 18, "bold"), bg="white", fg=self.colors['primary'])
-        header.pack(pady=20)
-        
-        # Key Statistics
-        stats_frame = tk.LabelFrame(parent, text="Key Statistics", 
-                                  font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        stats_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        total_members = len(self.system.view_members())
+        # Calculate fitness statistics
         total_workouts = 0
         total_calories_burned = 0
-        total_goals = 0
-        completed_goals = 0
+        exercise_types = {}
         
         for member in self.system.view_members():
-            if hasattr(member, 'workouts') and member.workouts:
-                total_workouts += len(member.workouts)
-                total_calories_burned += sum(w.get('calories', 0) for w in member.workouts)
-            
-            if hasattr(member, 'goals') and member.goals:
-                total_goals += len(member.goals)
-                completed_goals += len([g for g in member.goals if g.get('progress', 0) >= 100])
-        
-        # Display stats in grid
-        stats_grid = tk.Frame(stats_frame, bg="white")
-        stats_grid.pack()
-        
-        stats_data = [
-            ("Total Active Members", total_members),
-            ("Total Workouts Logged", total_workouts),
-            ("Total Calories Burned", f"{total_calories_burned:,}"),
-            ("Total Goals Set", total_goals),
-            ("Goals Completed", completed_goals),
-            ("Average Workouts per Member", f"{total_workouts/max(1, total_members):.1f}")
-        ]
-        
-        for i, (label, value) in enumerate(stats_data):
-            row = i // 2
-            col = i % 2
-            
-            stat_frame = tk.Frame(stats_grid, bg=self.colors['accent'], relief=tk.RAISED, bd=2)
-            stat_frame.grid(row=row, column=col, padx=10, pady=10, ipadx=20, ipady=10, sticky="ew")
-            
-            tk.Label(stat_frame, text=str(value), font=("Segoe UI", 16, "bold"), 
-                   bg=self.colors['accent'], fg="white").pack()
-            tk.Label(stat_frame, text=label, font=("Segoe UI", 10), 
-                   bg=self.colors['accent'], fg="white").pack()
-        
-        stats_grid.grid_columnconfigure(0, weight=1)
-        stats_grid.grid_columnconfigure(1, weight=1)
-        
-        # Exercise Type Analysis
-        exercise_frame = tk.LabelFrame(parent, text="Exercise Type Analysis", 
-                                     font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        exercise_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        exercise_counts = {}
-        for member in self.system.view_members():
-            if hasattr(member, 'workouts') and member.workouts:
+            if hasattr(member, "workouts") and member.workouts:
                 for workout in member.workouts:
-                    ex_type = workout.get('exercise_type', 'Other')
-                    exercise_counts[ex_type] = exercise_counts.get(ex_type, 0) + 1
+                    total_workouts += 1
+                    total_calories_burned += workout.get("calories", 0)
+                    exercise_type = workout.get("exercise_type", "Other")
+                    exercise_types[exercise_type] = exercise_types.get(exercise_type, 0) + 1
         
-        if exercise_counts:
-            tk.Label(exercise_frame, text="Most Popular Exercises:", 
-                   font=("Segoe UI", 12, "bold"), bg="white").pack(anchor=tk.W, pady=5)
+        # Display statistics
+        stats_frame = tk.LabelFrame(
+            report_frame,
+            text="Workout Statistics",
+            font=("Segoe UI", 12, "bold"),
+            bg="white",
+            fg=self.colors['primary']
+        )
+        stats_frame.pack(fill=tk.X, pady=10)
+        
+        tk.Label(stats_frame, text=f"Total Workouts: {total_workouts}", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(stats_frame, text=f"Total Calories Burned: {total_calories_burned}", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        
+        if total_workouts > 0:
+            avg_calories = total_calories_burned / total_workouts
+            tk.Label(stats_frame, text=f"Average Calories per Workout: {avg_calories:.1f}", 
+                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        
+        # Popular exercises
+        if exercise_types:
+            exercises_frame = tk.LabelFrame(
+                report_frame,
+                text="Popular Exercises",
+                font=("Segoe UI", 12, "bold"),
+                bg="white",
+                fg=self.colors['primary']
+            )
+            exercises_frame.pack(fill=tk.X, pady=10)
             
-            sorted_exercises = sorted(exercise_counts.items(), key=lambda x: x[1], reverse=True)
-            for exercise, count in sorted_exercises[:5]:
-                percentage = (count / sum(exercise_counts.values())) * 100
-                tk.Label(exercise_frame, 
-                       text=f"• {exercise}: {count} sessions ({percentage:.1f}%)", 
-                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=10)
-        else:
-            tk.Label(exercise_frame, text="No workout data available", 
-                   bg="white", font=("Segoe UI", 11)).pack(pady=10)
-        
-        # Member Activity Levels
-        activity_frame = tk.LabelFrame(parent, text="Member Activity Levels", 
-                                     font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        activity_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        activity_levels = {"High (10+ workouts)": 0, "Medium (5-9 workouts)": 0, "Low (1-4 workouts)": 0, "Inactive (0 workouts)": 0}
-        
-        for member in self.system.view_members():
-            workout_count = len(member.workouts) if hasattr(member, 'workouts') and member.workouts else 0
-            
-            if workout_count >= 10:
-                activity_levels["High (10+ workouts)"] += 1
-            elif workout_count >= 5:
-                activity_levels["Medium (5-9 workouts)"] += 1
-            elif workout_count >= 1:
-                activity_levels["Low (1-4 workouts)"] += 1
-            else:
-                activity_levels["Inactive (0 workouts)"] += 1
-        
-        for level, count in activity_levels.items():
-            percentage = (count / max(1, total_members)) * 100
-            tk.Label(activity_frame, 
-                   text=f"• {level}: {count} members ({percentage:.1f}%)", 
-                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=10, pady=2)
-
-    def _generate_individual_fitness_report(self, parent, member):
-        """Generate detailed fitness report for individual member"""
-        # Header
-        header = tk.Label(parent, text=f"Fitness Report: {member.name}", 
-                         font=("Segoe UI", 18, "bold"), bg="white", fg=self.colors['primary'])
-        header.pack(pady=20)
-        
-        # Member Info
-        info_frame = tk.LabelFrame(parent, text="Member Information", 
-                                 font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        info_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        info_grid = tk.Frame(info_frame, bg="white")
-        info_grid.pack()
-        
-        member_info = [
-            ("Member ID", member.member_id),
-            ("Age", f"{member.age} years"),
-            ("Membership Type", member.membership_type),
-            ("Fitness Goals", member.fitness_goals)
-        ]
-        
-        for i, (label, value) in enumerate(member_info):
-            tk.Label(info_grid, text=f"{label}:", font=("Segoe UI", 11, "bold"), 
-                   bg="white").grid(row=i//2, column=(i%2)*2, sticky=tk.W, padx=10, pady=5)
-            tk.Label(info_grid, text=str(value), font=("Segoe UI", 11), 
-                   bg="white").grid(row=i//2, column=(i%2)*2+1, sticky=tk.W, padx=10, pady=5)
-        
-        # Workout Summary
-        workout_frame = tk.LabelFrame(parent, text="Workout Summary", 
-                                    font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        workout_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        if hasattr(member, 'workouts') and member.workouts:
-            total_workouts = len(member.workouts)
-            total_calories = sum(w.get('calories', 0) for w in member.workouts)
-            total_duration = sum(w.get('duration', 0) for w in member.workouts)
-            avg_calories = total_calories / total_workouts if total_workouts > 0 else 0
-            
-            workout_stats = [
-                ("Total Workouts", total_workouts),
-                ("Total Calories Burned", f"{total_calories:,}"),
-                ("Total Duration", f"{total_duration} minutes"),
-                ("Average Calories per Workout", f"{avg_calories:.0f}")
-            ]
-            
-            workout_grid = tk.Frame(workout_frame, bg="white")
-            workout_grid.pack()
-            
-            for i, (label, value) in enumerate(workout_stats):
-                stat_frame = tk.Frame(workout_grid, bg=self.colors['warning'], relief=tk.RAISED, bd=2)
-                stat_frame.grid(row=i//2, column=i%2, padx=10, pady=5, ipadx=15, ipady=8, sticky="ew")
-                
-                tk.Label(stat_frame, text=str(value), font=("Segoe UI", 14, "bold"), 
-                       bg=self.colors['warning'], fg="white").pack()
-                tk.Label(stat_frame, text=label, font=("Segoe UI", 9), 
-                       bg=self.colors['warning'], fg="white").pack()
-            
-            workout_grid.grid_columnconfigure(0, weight=1)
-            workout_grid.grid_columnconfigure(1, weight=1)
-            
-            # Exercise breakdown
-            exercise_counts = {}
-            for workout in member.workouts:
-                ex_type = workout.get('exercise_type', 'Other')
-                exercise_counts[ex_type] = exercise_counts.get(ex_type, 0) + 1
-            
-            tk.Label(workout_frame, text="Exercise Types:", font=("Segoe UI", 12, "bold"), 
-                   bg="white").pack(anchor=tk.W, pady=(10, 5))
-            
-            for ex_type, count in exercise_counts.items():
+            for exercise, count in sorted(exercise_types.items(), key=lambda x: x[1], reverse=True)[:5]:
                 percentage = (count / total_workouts) * 100
-                tk.Label(workout_frame, 
-                       text=f"• {ex_type}: {count} sessions ({percentage:.1f}%)", 
-                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=10)
-        else:
-            tk.Label(workout_frame, text="No workout data available for this member", 
-                   bg="white", font=("Segoe UI", 11), fg="gray").pack(pady=20)
-        
-        # Goals Progress
-        goals_frame = tk.LabelFrame(parent, text="Goals Progress", 
-                                  font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        goals_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        if hasattr(member, 'goals') and member.goals:
-            for goal in member.goals:
-                goal_container = tk.Frame(goals_frame, bg="white", relief=tk.RIDGE, bd=1)
-                goal_container.pack(fill=tk.X, pady=5)
-                
-                tk.Label(goal_container, text=f"Goal: {goal.get('goal_type', 'Unknown')}", 
-                       font=("Segoe UI", 11, "bold"), bg="white").pack(anchor=tk.W, padx=10, pady=2)
-                
-                tk.Label(goal_container, text=f"Target: {goal.get('target', 'N/A')}", 
-                       font=("Segoe UI", 10), bg="white").pack(anchor=tk.W, padx=10)
-                
-                progress = goal.get('progress', 0)
-                progress_frame = tk.Frame(goal_container, bg="white")
-                progress_frame.pack(fill=tk.X, padx=10, pady=5)
-                
-                # Progress bar
-                progress_bar = ttk.Progressbar(progress_frame, length=300, mode='determinate')
-                progress_bar['value'] = progress
-                progress_bar.pack(side=tk.LEFT)
-                
-                tk.Label(progress_frame, text=f"{progress:.0f}%", 
-                       font=("Segoe UI", 10), bg="white").pack(side=tk.LEFT, padx=5)
-        else:
-            tk.Label(goals_frame, text="No goals set for this member", 
-                   bg="white", font=("Segoe UI", 11), fg="gray").pack(pady=20)
-        
-        # Recommendations
-        recommendations_frame = tk.LabelFrame(parent, text="Personalized Recommendations", 
-                                            font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        recommendations_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        recommendations = self._generate_member_recommendations(member)
-        
-        for rec in recommendations:
-            tk.Label(recommendations_frame, text=f"• {rec}", 
-                   bg="white", font=("Segoe UI", 11), wraplength=600, justify=tk.LEFT).pack(anchor=tk.W, padx=10, pady=2)
-
-    def _generate_member_recommendations(self, member):
-        """Generate personalized recommendations for a member"""
-        recommendations = []
-        
-        if hasattr(member, 'workouts') and member.workouts:
-            workout_count = len(member.workouts)
-            total_calories = sum(w.get('calories', 0) for w in member.workouts)
-            avg_calories = total_calories / workout_count if workout_count > 0 else 0
-            
-            # Weekly workout frequency
-            recent_workouts = [w for w in member.workouts 
-                             if (datetime.now() - w['date']).days <= 7]
-            
-            if len(recent_workouts) < 3:
-                recommendations.append("Try to increase your workout frequency to at least 3 times per week")
-            
-            if avg_calories < 300:
-                recommendations.append("Consider increasing workout intensity to burn more calories")
-            
-            # Exercise variety
-            exercise_types = set(w.get('exercise_type') for w in member.workouts)
-            if len(exercise_types) < 3:
-                recommendations.append("Add more variety to your workouts by trying different exercise types")
-            
-            # Goal-specific recommendations
-            if member.fitness_goals == "Weight Loss" and avg_calories < 400:
-                recommendations.append("For weight loss, focus on higher calorie-burning exercises like HIIT or running")
-            elif member.fitness_goals == "Muscle Gain":
-                strength_workouts = [w for w in member.workouts if w.get('exercise_type') == 'Weight Lifting']
-                if len(strength_workouts) / workout_count < 0.5:
-                    recommendations.append("Increase strength training to at least 50% of your workouts for muscle gain")
-            elif member.fitness_goals == "Endurance":
-                cardio_workouts = [w for w in member.workouts if w.get('exercise_type') in ['Running', 'Cycling', 'Swimming']]
-                if len(cardio_workouts) / workout_count < 0.6:
-                    recommendations.append("Focus more on cardio exercises to improve endurance")
-        else:
-            recommendations.append("Start tracking your workouts to get personalized recommendations")
-            recommendations.append("Begin with 3-4 workouts per week, mixing cardio and strength training")
-        
-        # Nutrition recommendations if meal data exists
-        if hasattr(member, 'meals') and member.meals:
-            total_calories = sum(m.get('calories', 0) for m in member.meals)
-            days_tracked = len(set(m['date'].strftime('%Y-%m-%d') for m in member.meals))
-            avg_daily_calories = total_calories / max(1, days_tracked)
-            
-            if member.fitness_goals == "Weight Loss" and avg_daily_calories > 2000:
-                recommendations.append("Consider reducing daily calorie intake to support weight loss")
-            elif member.fitness_goals == "Muscle Gain" and avg_daily_calories < 2500:
-                recommendations.append("Increase calorie intake to support muscle building")
-        
-        if not recommendations:
-            recommendations.append("Keep up the great work! Consistency is key to achieving your fitness goals")
-        
-        return recommendations
+                tk.Label(exercises_frame, text=f"• {exercise}: {count} workouts ({percentage:.1f}%)", 
+                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=2)
 
     def _create_comprehensive_nutrition_report(self, parent):
         """Create comprehensive nutrition report"""
-        # Member selection
-        selection_frame = tk.Frame(parent, bg="white")
-        selection_frame.pack(fill=tk.X, padx=20, pady=10)
+        report_frame = tk.Frame(parent, bg=self.colors['white'])
+        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        tk.Label(selection_frame, text="Select Member for Nutrition Report:", 
-               font=("Segoe UI", 12, "bold"), bg="white").pack(side=tk.LEFT, padx=5)
+        tk.Label(
+            report_frame,
+            text="Comprehensive Nutrition Report",
+            font=("Segoe UI", 16, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary']
+        ).pack(pady=10)
         
-        member_var = tk.StringVar()
-        member_combo = ttk.Combobox(selection_frame, textvariable=member_var, width=30)
-        member_combo['values'] = ["All Members"] + [f"{m.member_id} - {m.name}" for m in self.system.view_members()]
-        member_combo.set("All Members")
-        member_combo.pack(side=tk.LEFT, padx=5)
-        
-        # Report content area
-        report_content = tk.Frame(parent, bg="white")
-        report_content.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-        
-        def generate_nutrition_report():
-            # Clear previous report
-            for widget in report_content.winfo_children():
-                widget.destroy()
-            
-            # Create scrollable report area
-            canvas = tk.Canvas(report_content, bg="white")
-            scrollbar = ttk.Scrollbar(report_content, orient=tk.VERTICAL, command=canvas.yview)
-            scrollable_frame = tk.Frame(canvas, bg="white")
-            
-            canvas.configure(yscrollcommand=scrollbar.set)
-            canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-            
-            canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-            
-            if member_var.get() == "All Members":
-                self._generate_overall_nutrition_summary(scrollable_frame)
-            else:
-                member_id = member_var.get().split(" - ")[0]
-                member = self.system.find_member_by_id(member_id)
-                if member:
-                    self._generate_individual_nutrition_report(scrollable_frame, member)
-            
-            # Update scroll region
-            scrollable_frame.update_idletasks()
-            canvas.configure(scrollregion=canvas.bbox("all"))
-            canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_frame, width=e.width))
-        
-        # Generate button
-        self._create_styled_button(
-            selection_frame, "🥗 Generate Report", generate_nutrition_report, self.colors['success']
-        ).pack(side=tk.LEFT, padx=10)
-        
-        member_combo.bind("<<ComboboxSelected>>", lambda e: generate_nutrition_report())
-        
-        # Initial report generation
-        generate_nutrition_report()
-
-    def _generate_overall_nutrition_summary(self, parent):
-        """Generate overall nutrition summary for all members"""
-        # Header
-        header = tk.Label(parent, text="Overall Nutrition Summary Report", 
-                         font=("Segoe UI", 18, "bold"), bg="white", fg=self.colors['primary'])
-        header.pack(pady=20)
-        
-        # Calculate overall nutrition statistics
+        # Calculate nutrition statistics
         total_meals = 0
         total_calories = 0
         total_protein = 0
         total_carbs = 0
         total_fat = 0
-        tracking_members = 0
+        meal_types = {}
         
         for member in self.system.view_members():
-            if hasattr(member, 'meals') and member.meals:
-                tracking_members += 1
-                total_meals += len(member.meals)
+            if hasattr(member, "meals") and member.meals:
                 for meal in member.meals:
-                    total_calories += meal.get('calories', 0)
-                    total_protein += meal.get('protein', 0)
-                    total_carbs += meal.get('carbs', 0)
-                    total_fat += meal.get('fat', 0)
+                    total_meals += 1
+                    total_calories += meal.get("calories", 0)
+                    total_protein += meal.get("protein", 0)
+                    total_carbs += meal.get("carbs", 0)
+                    total_fat += meal.get("fat", 0)
+                    meal_type = meal.get("meal_type", "Other")
+                    meal_types[meal_type] = meal_types.get(meal_type, 0) + 1
         
-        # Key Statistics
-        stats_frame = tk.LabelFrame(parent, text="Nutrition Statistics", 
-                                  font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        stats_frame.pack(fill=tk.X, padx=20, pady=10)
+        # Display statistics
+        stats_frame = tk.LabelFrame(
+            report_frame,
+            text="Nutrition Statistics",
+            font=("Segoe UI", 12, "bold"),
+            bg="white",
+            fg=self.colors['primary']
+        )
+        stats_frame.pack(fill=tk.X, pady=10)
         
-        if tracking_members > 0:
-            stats_data = [
-                ("Members Tracking Nutrition", tracking_members),
-                ("Total Meals Logged", total_meals),
-                ("Total Calories Consumed", f"{total_calories:,}"),
-                ("Average Meals per Member", f"{total_meals/tracking_members:.1f}"),
-                ("Total Protein Consumed", f"{total_protein:,}g"),
-                ("Total Carbohydrates", f"{total_carbs:,}g")
-            ]
-            
-            stats_grid = tk.Frame(stats_frame, bg="white")
-            stats_grid.pack()
-            
-            for i, (label, value) in enumerate(stats_data):
-                row = i // 2
-                col = i % 2
-                
-                stat_frame = tk.Frame(stats_grid, bg=self.colors['success'], relief=tk.RAISED, bd=2)
-                stat_frame.grid(row=row, column=col, padx=10, pady=5, ipadx=15, ipady=8, sticky="ew")
-                
-                tk.Label(stat_frame, text=str(value), font=("Segoe UI", 14, "bold"), 
-                       bg=self.colors['success'], fg="white").pack()
-                tk.Label(stat_frame, text=label, font=("Segoe UI", 9), 
-                       bg=self.colors['success'], fg="white").pack()
-            
-            stats_grid.grid_columnconfigure(0, weight=1)
-            stats_grid.grid_columnconfigure(1, weight=1)
-        else:
-            tk.Label(stats_frame, text="No nutrition data available - encourage members to start tracking meals!", 
-                   bg="white", font=("Segoe UI", 12), fg="gray").pack(pady=20)
-
-    def _generate_individual_nutrition_report(self, parent, member):
-        """Generate detailed nutrition report for individual member"""
-        # Header
-        header = tk.Label(parent, text=f"Nutrition Report: {member.name}", 
-                         font=("Segoe UI", 18, "bold"), bg="white", fg=self.colors['primary'])
-        header.pack(pady=20)
+        tk.Label(stats_frame, text=f"Total Meals Logged: {total_meals}", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(stats_frame, text=f"Total Calories: {total_calories}", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(stats_frame, text=f"Total Protein: {total_protein}g", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(stats_frame, text=f"Total Carbohydrates: {total_carbs}g", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(stats_frame, text=f"Total Fat: {total_fat}g", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
         
-        if not hasattr(member, 'meals') or not member.meals:
-            tk.Label(parent, text="No nutrition data available for this member", 
-                   bg="white", font=("Segoe UI", 14), fg="gray").pack(pady=50)
-            return
-        
-        # Nutrition Summary
-        nutrition_frame = tk.LabelFrame(parent, text="Nutrition Summary", 
-                                      font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        nutrition_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        total_meals = len(member.meals)
-        total_calories = sum(m.get('calories', 0) for m in member.meals)
-        total_protein = sum(m.get('protein', 0) for m in member.meals)
-        total_carbs = sum(m.get('carbs', 0) for m in member.meals)
-        total_fat = sum(m.get('fat', 0) for m in member.meals)
-        
-        days_tracked = len(set(m['date'].strftime('%Y-%m-%d') for m in member.meals))
-        avg_calories = total_calories / max(1, days_tracked)
-        avg_protein = total_protein / max(1, days_tracked)
-        
-        nutrition_stats = [
-            ("Total Meals Logged", total_meals),
-            ("Days Tracked", days_tracked),
-            ("Total Calories", f"{total_calories:,}"),
-            ("Avg Calories/Day", f"{avg_calories:.0f}"),
-            ("Total Protein", f"{total_protein}g"),
-            ("Avg Protein/Day", f"{avg_protein:.0f}g")
-        ]
-        
-        nutrition_grid = tk.Frame(nutrition_frame, bg="white")
-        nutrition_grid.pack()
-        
-        for i, (label, value) in enumerate(nutrition_stats):
-            row = i // 2
-            col = i % 2
-            
-            stat_frame = tk.Frame(nutrition_grid, bg=self.colors['success'], relief=tk.RAISED, bd=2)
-            stat_frame.grid(row=row, column=col, padx=10, pady=5, ipadx=15, ipady=8, sticky="ew")
-            
-            tk.Label(stat_frame, text=str(value), font=("Segoe UI", 14, "bold"), 
-                   bg=self.colors['success'], fg="white").pack()
-            tk.Label(stat_frame, text=label, font=("Segoe UI", 9), 
-                   bg=self.colors['success'], fg="white").pack()
-        
-        nutrition_grid.grid_columnconfigure(0, weight=1)
-        nutrition_grid.grid_columnconfigure(1, weight=1)
-        
-        # Meal Type Analysis
-        meal_analysis_frame = tk.LabelFrame(parent, text="Meal Type Analysis", 
-                                          font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        meal_analysis_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        meal_types = {}
-        for meal in member.meals:
-            meal_type = meal.get('meal_type', 'Other')
-            meal_types[meal_type] = meal_types.get(meal_type, 0) + 1
-        
-        if meal_types:
-            for meal_type, count in meal_types.items():
-                percentage = (count / total_meals) * 100
-                tk.Label(meal_analysis_frame, 
-                       text=f"• {meal_type}: {count} meals ({percentage:.1f}%)", 
-                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=10, pady=2)
-        
-        # Nutrition Recommendations
-        recommendations_frame = tk.LabelFrame(parent, text="Nutrition Recommendations", 
-                                            font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        recommendations_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        recommendations = self._generate_nutrition_recommendations(member)
-        
-        for rec in recommendations:
-            tk.Label(recommendations_frame, text=f"• {rec}", 
-                   bg="white", font=("Segoe UI", 11), wraplength=600, justify=tk.LEFT).pack(anchor=tk.W, padx=10, pady=2)
-
-    def _generate_nutrition_recommendations(self, member):
-        """Generate nutrition recommendations based on member data and goals"""
-        recommendations = []
-        
-        if not hasattr(member, 'meals') or not member.meals:
-            return ["Start tracking your meals to get personalized nutrition recommendations"]
-        
-        total_calories = sum(m.get('calories', 0) for m in member.meals)
-        total_protein = sum(m.get('protein', 0) for m in member.meals)
-        days_tracked = len(set(m['date'].strftime('%Y-%m-%d') for m in member.meals))
-        
-        avg_calories = total_calories / max(1, days_tracked)
-        avg_protein = total_protein / max(1, days_tracked)
-        
-        # Goal-specific recommendations
-        if member.fitness_goals == "Weight Loss":
-            if avg_calories > 2000:
-                recommendations.append("Consider reducing daily calorie intake to 1800-2000 for weight loss")
-            if avg_protein < 80:
-                recommendations.append("Increase protein intake to preserve muscle during weight loss")
-        
-        elif member.fitness_goals == "Muscle Gain":
-            if avg_calories < 2500:
-                recommendations.append("Increase calorie intake to 2500-3000 to support muscle building")
-            if avg_protein < 100:
-                recommendations.append("Aim for higher protein intake (1.6-2.2g per kg body weight)")
-        
-        # General recommendations
-        meal_types = set(m.get('meal_type') for m in member.meals)
-        if "Breakfast" not in meal_types:
-            recommendations.append("Don't skip breakfast - it's important for metabolism")
-        
-        if days_tracked < 7:
-            recommendations.append("Try to log meals more consistently for better analysis")
-        
-        if avg_protein < 50:
-            recommendations.append("Increase overall protein intake for better muscle recovery")
-        
-        if not recommendations:
-            recommendations.append("Great job with your nutrition tracking! Keep maintaining a balanced diet")
-        
-        return recommendations
+        if total_meals > 0:
+            avg_calories = total_calories / total_meals
+            tk.Label(stats_frame, text=f"Average Calories per Meal: {avg_calories:.1f}", 
+                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
 
     def _create_performance_analysis_report(self, parent):
         """Create performance analysis report"""
-        tk.Label(parent, text="Performance Analysis Report", 
-               font=("Segoe UI", 18, "bold"), bg="white", fg=self.colors['primary']).pack(pady=20)
+        report_frame = tk.Frame(parent, bg=self.colors['white'])
+        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        tk.Label(parent, text="Track progress over time, identify trends, and measure improvements", 
-               font=("Segoe UI", 12), bg="white", fg="gray").pack(pady=10)
+        tk.Label(
+            report_frame,
+            text="Performance Analysis Report",
+            font=("Segoe UI", 16, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary']
+        ).pack(pady=10)
         
-        # This would contain charts and graphs if matplotlib is available
-        if not MATPLOTLIB_AVAILABLE:
-            tk.Label(parent, text="Charts and graphs require matplotlib installation", 
-                   font=("Segoe UI", 12), bg="white", fg="red").pack(pady=20)
+        # Member performance analysis
+        performance_data = []
+        for member in self.system.view_members():
+            workout_count = len(member.workouts) if hasattr(member, "workouts") and member.workouts else 0
+            total_calories = sum(w.get("calories", 0) for w in member.workouts) if hasattr(member, "workouts") and member.workouts else 0
+            goal_count = len(member.goals) if hasattr(member, "goals") and member.goals else 0
+            
+            performance_data.append({
+                "name": member.name,
+                "workouts": workout_count,
+                "calories": total_calories,
+                "goals": goal_count
+            })
         
-        # Member progress tracking would go here
-        progress_frame = tk.LabelFrame(parent, text="Member Progress Tracking", 
-                                     font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        progress_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        # Display top performers
+        top_frame = tk.LabelFrame(
+            report_frame,
+            text="Top Performers",
+            font=("Segoe UI", 12, "bold"),
+            bg="white",
+            fg=self.colors['primary']
+        )
+        top_frame.pack(fill=tk.X, pady=10)
         
-        tk.Label(progress_frame, text="Performance analysis features will be enhanced with matplotlib charts", 
-               bg="white").pack(pady=50)
+        # Sort by workout count
+        top_by_workouts = sorted(performance_data, key=lambda x: x["workouts"], reverse=True)[:5]
+        
+        tk.Label(top_frame, text="Most Active Members (by workout count):", 
+               bg="white", font=("Segoe UI", 11, "bold")).pack(anchor=tk.W, padx=15, pady=5)
+        
+        for i, member_data in enumerate(top_by_workouts, 1):
+            if member_data["workouts"] > 0:
+                tk.Label(top_frame, text=f"{i}. {member_data['name']}: {member_data['workouts']} workouts", 
+                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=25, pady=2)
 
     def _create_business_analytics_report(self, parent):
         """Create business analytics report"""
-        tk.Label(parent, text="Business Analytics Report", 
-               font=("Segoe UI", 18, "bold"), bg="white", fg=self.colors['primary']).pack(pady=20)
+        report_frame = tk.Frame(parent, bg=self.colors['white'])
+        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        # Revenue Analysis
-        revenue_frame = tk.LabelFrame(parent, text="Revenue Analysis", 
-                                    font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        revenue_frame.pack(fill=tk.X, padx=20, pady=10)
+        tk.Label(
+            report_frame,
+            text="Business Analytics Report",
+            font=("Segoe UI", 16, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary']
+        ).pack(pady=10)
         
+        # Business statistics
+        members = self.system.view_members()
+        total_members = len(members)
         total_revenue = sum(t.amount_paid for t in self.system.transactions)
-        membership_revenue = {"Basic": 0, "Premium": 0, "VIP": 0}
         
-        for transaction in self.system.transactions:
-            if hasattr(transaction.member, 'membership_type'):
-                membership_type = transaction.member.membership_type
-                if membership_type in membership_revenue:
-                    membership_revenue[membership_type] += transaction.amount_paid
-        
-        tk.Label(revenue_frame, text=f"Total Revenue: ${total_revenue:.2f}", 
-               font=("Segoe UI", 14, "bold"), bg="white", fg=self.colors['success']).pack(pady=10)
-        
-        for membership_type, revenue in membership_revenue.items():
-            percentage = (revenue / max(1, total_revenue)) * 100
-            tk.Label(revenue_frame, 
-                   text=f"{membership_type} Membership: ${revenue:.2f} ({percentage:.1f}%)", 
-                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=10, pady=2)
-        
-        # Membership Distribution
-        membership_frame = tk.LabelFrame(parent, text="Membership Distribution", 
-                                       font=("Segoe UI", 14, "bold"), bg="white", padx=20, pady=15)
-        membership_frame.pack(fill=tk.X, padx=20, pady=10)
-        
+        # Membership breakdown
         membership_counts = {"Basic": 0, "Premium": 0, "VIP": 0}
-        for member in self.system.view_members():
+        for member in members:
             if member.membership_type in membership_counts:
                 membership_counts[member.membership_type] += 1
         
-        total_members = sum(membership_counts.values())
+        # Display business metrics
+        business_frame = tk.LabelFrame(
+            report_frame,
+            text="Business Metrics",
+            font=("Segoe UI", 12, "bold"),
+            bg="white",
+            fg=self.colors['primary']
+        )
+        business_frame.pack(fill=tk.X, pady=10)
+        
+        tk.Label(business_frame, text=f"Total Members: {total_members}", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(business_frame, text=f"Total Revenue: ${total_revenue:.2f}", 
+               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        
+        if total_members > 0:
+            avg_revenue = total_revenue / total_members
+            tk.Label(business_frame, text=f"Average Revenue per Member: ${avg_revenue:.2f}", 
+                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        
+        # Membership distribution
+        membership_frame = tk.LabelFrame(
+            report_frame,
+            text="Membership Distribution",
+            font=("Segoe UI", 12, "bold"),
+            bg="white",
+            fg=self.colors['primary']
+        )
+        membership_frame.pack(fill=tk.X, pady=10)
         
         for membership_type, count in membership_counts.items():
             percentage = (count / max(1, total_members)) * 100
-            tk.Label(membership_frame, 
-                   text=f"{membership_type}: {count} members ({percentage:.1f}%)", 
-                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=10, pady=2)
+            tk.Label(membership_frame, text=f"• {membership_type}: {count} members ({percentage:.1f}%)", 
+                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=2)
 
 def main():
     try:
