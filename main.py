@@ -96,25 +96,32 @@ class SmartFitnessApp:
         title_label.pack(side=tk.LEFT, padx=30, pady=20)
         
         # Status info
-        status_frame = tk.Frame(header_frame, bg=self.colors['primary'])
-        status_frame.pack(side=tk.RIGHT, padx=30, pady=20)
+        self.status_frame = tk.Frame(header_frame, bg=self.colors['primary'])
+        self.status_frame.pack(side=tk.RIGHT, padx=30, pady=20)
         
-        members_count = len(self.system.view_members())
-        tk.Label(
-            status_frame, 
-            text=f"Active Members: {members_count}", 
+        # Create labels that can be updated
+        self.members_count_label = tk.Label(
+            self.status_frame, 
+            text=f"Active Members: {len(self.system.view_members())}", 
             font=("Segoe UI", 12), 
             bg=self.colors['primary'], 
             fg=self.colors['white']
-        ).pack(anchor=tk.E)
+        )
+        self.members_count_label.pack(anchor=tk.E)
         
         tk.Label(
-            status_frame, 
+            self.status_frame, 
             text=f"System Status: Online", 
             font=("Segoe UI", 10), 
             bg=self.colors['primary'], 
             fg=self.colors['success']
         ).pack(anchor=tk.E)
+
+    def update_header_stats(self):
+        """Update header statistics"""
+        if hasattr(self, 'members_count_label'):
+            members_count = len(self.system.view_members())
+            self.members_count_label.config(text=f"Active Members: {members_count}")
         
     def _create_sidebar(self):
         """Create enhanced sidebar with better styling"""
@@ -558,6 +565,9 @@ class SmartFitnessApp:
                 member.membership_type,
                 member.fitness_goals
             ))
+        
+        # Update header stats when members table is loaded
+        self.update_header_stats()
 
     def add_new_member(self):
         """Enhanced add member dialog"""
@@ -646,6 +656,7 @@ class SmartFitnessApp:
                 )
                 self.system.register_member(new_member)
                 self.load_members_table()
+                self.update_header_stats()  # Update header after adding member
                 messagebox.showinfo("Success", f"Member {name_var.get()} added successfully!")
                 add_window.destroy()
             except ValueError:
@@ -746,6 +757,7 @@ class SmartFitnessApp:
                 member.update_membership(membership_var.get())
                 member.fitness_goals = goals_var.get()
                 self.load_members_table()
+                self.update_header_stats()  # Update header after updating member
                 messagebox.showinfo("Success", "Member updated successfully!")
                 update_window.destroy()
             except Exception as e:
@@ -774,6 +786,7 @@ class SmartFitnessApp:
             if self.system.cancel_membership(member_id):
                 messagebox.showinfo("Success", "Member deleted successfully!")
                 self.load_members_table()
+                self.update_header_stats()  # Update header after deleting member
             else:
                 messagebox.showerror("Error", "Failed to delete member.")
     
@@ -1746,7 +1759,7 @@ class SmartFitnessApp:
                 text=f"Nutrition Summary for {member.name}",
                 font=("Segoe UI", 12, "bold"),
                 bg="white",
-                               fg=self.colors['primary']
+                fg=self.colors['primary']
             )
             stats_frame.pack(fill=tk.X, pady=10)
             
