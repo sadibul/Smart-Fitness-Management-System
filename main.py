@@ -806,25 +806,114 @@ class SmartFitnessApp:
             fg=self.colors['primary']
         ).pack(side=tk.LEFT)
         
-        # Create notebook for tabs
-        notebook = ttk.Notebook(self.content_frame)
-        notebook.pack(fill=tk.BOTH, expand=True, padx=30, pady=20)
+        # Create custom button navigation instead of notebook
+        nav_frame = tk.Frame(self.content_frame, bg="white", height=80)
+        nav_frame.pack(fill=tk.X, padx=30, pady=10)
+        nav_frame.pack_propagate(False)
         
-        # Tab 1: Log Workout
-        log_frame = tk.Frame(notebook, bg=self.colors['white'])
-        notebook.add(log_frame, text="📝 Log Workout")
+        # Content frame for different sections
+        content_frame = tk.Frame(self.content_frame, bg="white")
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=10)
         
-        # Tab 2: Workout History
-        history_frame = tk.Frame(notebook, bg=self.colors['white'])
-        notebook.add(history_frame, text="📊 Workout History")
+        # Variable to track current view
+        current_view = tk.StringVar(value="log_workout")
         
-        # Tab 3: Exercise Library
-        library_frame = tk.Frame(notebook, bg=self.colors['white'])
-        notebook.add(library_frame, text="📚 Exercise Library")
+        # Create styled navigation buttons
+        button_style = {
+            'font': ("Segoe UI", 12, "bold"),
+            'bd': 0,
+            'pady': 15,
+            'padx': 25,
+            'cursor': "hand2",
+            'relief': tk.FLAT,
+            'width': 18,
+            'height': 2
+        }
         
-        self._create_workout_log_tab(log_frame)
-        self._create_workout_history_tab(history_frame)
-        self._create_exercise_library_tab(library_frame)
+        def switch_view(view_name):
+            current_view.set(view_name)
+            # Clear content frame
+            for widget in content_frame.winfo_children():
+                widget.destroy()
+            
+            # Update button styles
+            for btn, view in button_views:
+                if view == view_name:
+                    btn.configure(bg=self.colors['warning'], fg="white")
+                else:
+                    btn.configure(bg=self.colors['light'], fg=self.colors['text'])
+            
+            # Show appropriate content
+            if view_name == "log_workout":
+                self._create_workout_log_tab(content_frame)
+            elif view_name == "workout_history":
+                self._create_workout_history_tab(content_frame)
+            elif view_name == "exercise_library":
+                self._create_exercise_library_tab(content_frame)
+        
+        # Create navigation buttons with modern styling
+        log_workout_btn = tk.Button(
+            nav_frame,
+            text="📝 Log Workout",
+            command=lambda: switch_view("log_workout"),
+            bg=self.colors['warning'],
+            fg="white",
+            **button_style
+        )
+        log_workout_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        workout_history_btn = tk.Button(
+            nav_frame,
+            text="📊 Workout History",
+            command=lambda: switch_view("workout_history"),
+            bg=self.colors['light'],
+            fg=self.colors['text'],
+            **button_style
+        )
+        workout_history_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        exercise_library_btn = tk.Button(
+            nav_frame,
+            text="📚 Exercise Library",
+            command=lambda: switch_view("exercise_library"),
+            bg=self.colors['light'],
+            fg=self.colors['text'],
+            **button_style
+        )
+        exercise_library_btn.pack(side=tk.LEFT, padx=10, pady=15)
+        
+        # Store button references for style updates
+        button_views = [
+            (log_workout_btn, "log_workout"),
+            (workout_history_btn, "workout_history"),
+            (exercise_library_btn, "exercise_library")
+        ]
+        
+        # Add hover effects to buttons
+        def create_hover_effect(button, active_view):
+            def on_enter(e):
+                if current_view.get() != active_view:
+                    button.configure(bg=self._darken_color(self.colors['light']))
+            
+            def on_leave(e):
+                if current_view.get() != active_view:
+                    button.configure(bg=self.colors['light'])
+                elif current_view.get() == active_view:
+                    button.configure(bg=self.colors['warning'])
+            
+            button.bind("<Enter>", on_enter)
+            button.bind("<Leave>", on_leave)
+        
+        # Apply hover effects
+        create_hover_effect(workout_history_btn, "workout_history")
+        create_hover_effect(exercise_library_btn, "exercise_library")
+        
+        # Add visual separator
+        separator = tk.Frame(nav_frame, bg=self.colors['accent'], height=3)
+        separator.pack(fill=tk.X, padx=20, pady=(0, 10), side=tk.BOTTOM)
+        
+        # Initialize with log workout view
+        self._create_workout_log_tab(content_frame)
 
     def _create_workout_log_tab(self, parent):
         """Create workout logging form"""
