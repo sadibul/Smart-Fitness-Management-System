@@ -1269,7 +1269,7 @@ class SmartFitnessApp:
         # Notes
         tk.Label(form_frame, text="Notes:", font=("Segoe UI", 11, "bold"), 
                 bg=self.colors['white']).grid(row=4, column=0, sticky=tk.NW, pady=10)
-        notes_text = tk.Text(form_frame, width=33, height=4)
+        notes_text = tk.Text(form_frame, width=32, height=4, font=("Segoe UI", 11))
         notes_text.insert("1.0", workout.get("notes", ""))
         notes_text.grid(row=4, column=1, sticky=tk.W, pady=10)
         
@@ -1512,10 +1512,11 @@ class SmartFitnessApp:
                  font=("Arial", 12), command=save_goal).pack(pady=10)
 
     def _create_monitor_progress_tab(self, parent):
-        """Create the Monitor Progress tab content"""
+        """Create the Monitor Progress tab content with visual progress tracking"""
         monitor_frame = tk.Frame(parent, bg="white")
         monitor_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
+        # Header
         tk.Label(
             monitor_frame,
             text="Goal Progress Monitoring",
@@ -1524,21 +1525,389 @@ class SmartFitnessApp:
             fg=self.colors['primary']
         ).pack(pady=10)
         
-        tk.Label(
-            monitor_frame,
-            text="Track your fitness goals and monitor progress over time",
-            font=("Segoe UI", 12),
-            bg="white",
-            fg="gray"
-        ).pack(pady=5)
+        # Member selection for viewing progress
+        selection_frame = tk.Frame(monitor_frame, bg="white")
+        selection_frame.pack(fill=tk.X, pady=10)
         
-        # Add more monitoring functionality here as needed
+        tk.Label(selection_frame, text="Select Member to View Progress:", 
+               font=("Segoe UI", 12, "bold"), bg="white").pack(side=tk.LEFT, padx=5)
+        
+        progress_member_var = tk.StringVar()
+        progress_member_combo = ttk.Combobox(selection_frame, textvariable=progress_member_var, width=30)
+        progress_member_combo['values'] = ["All Members"] + [f"{m.member_id} - {m.name}" for m in self.system.view_members()]
+        progress_member_combo.set("All Members")
+        progress_member_combo.pack(side=tk.LEFT, padx=5)
+        
+        # Progress display area
+        progress_display_frame = tk.Frame(monitor_frame, bg="white")
+        progress_display_frame.pack(fill=tk.BOTH, expand=True, pady=20)
+        
+        def show_progress():
+            # Clear previous progress display
+            for widget in progress_display_frame.winfo_children():
+                widget.destroy()
+            
+            if progress_member_var.get() == "All Members":
+                self._show_all_members_progress(progress_display_frame)
+            else:
+                member_id = progress_member_var.get().split(" - ")[0]
+                member = self.system.find_member_by_id(member_id)
+                if member:
+                    self._show_individual_member_progress(progress_display_frame, member)
+                else:
+                    tk.Label(progress_display_frame, text="Member not found", 
+                           bg="white", font=("Segoe UI", 12), fg="red").pack(pady=50)
+        
+        # Refresh button
+        self._create_styled_button(
+            selection_frame, "📊 View Progress", show_progress, self.colors['accent']
+        ).pack(side=tk.LEFT, padx=10)
+        
+        progress_member_combo.bind("<<ComboboxSelected>>", lambda e: show_progress())
+        
+        # Initial display
+        show_progress()
+
+    def _show_all_members_progress(self, parent):
+        """Show progress overview for all members"""
+        # Create scrollable frame
+        canvas = tk.Canvas(parent, bg="white")
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="white")
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        
+        # Overview statistics
+        total_goals = 0
+        completed_goals = 0
+        members_with_goals = 0
+        
+        # Calculate overall statistics
+        for member in self.system.view_members():
+            if hasattr(member, "goals") and member.goals:
+                members_with_goals += 1
+                for goal in member.goals:
+                    total_goals += 1
+                    progress = goal.get("progress", 0)
+                    if progress >= 100:
+                        completed_goals += 1
+        
+        # Statistics cards
+        stats_frame = tk.Frame(scrollable_frame, bg="white")
+        stats_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(stats_frame, text="📊 Overall Progress Statistics", 
+               font=("Segoe UI", 14, "bold"), bg="white", fg=self.colors['primary']).pack(anchor=tk.W, pady=10)
+        
+        stats_grid = tk.Frame(stats_frame, bg="white")
+        stats_grid.pack(fill=tk.X)
+        
+        completion_rate = (completed_goals / max(1, total_goals)) * 100
+        
+        stats_data = [
+            ("Members with Goals", members_with_goals, self.colors['success']),
+            ("Total Goals", total_goals, self.colors['accent']),
+            ("Completed Goals", completed_goals, self.colors['warning']),
+            ("Completion Rate", f"{completion_rate:.1f}%", self.colors['danger'])
+        ]
+        
+        for i, (label, value, color) in enumerate(stats_data):
+            stat_card = tk.Frame(stats_grid, bg=color, relief=tk.RAISED, bd=2)
+            stat_card.grid(row=0, column=i, padx=10, pady=10, ipadx=15, ipady=10, sticky="ew")
+            
+            tk.Label(stat_card, text=str(value), font=("Segoe UI", 14, "bold"), 
+                   bg=color, fg="white").pack()
+            tk.Label(stat_card, text=label, font=("Segoe UI", 9), 
+                   bg=color, fg="white").pack()
+        
+        for i in range(4):
+            stats_grid.grid_columnconfigure(i, weight=1)
+        
+        # Individual member progress summary
+        for member in self.system.view_members():
+            if hasattr(member, "goals") and member.goals:
+                member_frame = tk.LabelFrame(
+                    scrollable_frame,
+                    text=f"🎯 {member.name}'s Goals",
+                    font=("Segoe UI", 12, "bold"),
+                    bg="white",
+                    fg=self.colors['primary']
+                )
+                member_frame.pack(fill=tk.X, padx=20, pady=10)
+                
+                for goal in member.goals:
+                    self._create_goal_progress_widget(member_frame, goal, compact=True)
+        
+        # Update scroll region
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_frame, width=event.width)
+        
+        scrollable_frame.bind("<Configure>", configure_scroll_region)
+        canvas.bind('<Configure>', configure_scroll_region)
+
+    def _show_individual_member_progress(self, parent, member):
+        """Show detailed progress for individual member"""
+        # Create scrollable frame
+        canvas = tk.Canvas(parent, bg="white")
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="white")
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        
+        # Member header
+        header_frame = tk.Frame(scrollable_frame, bg=self.colors['accent'], relief=tk.RAISED, bd=2)
+        header_frame.pack(fill=tk.X, padx=20, pady=10)
+        
         tk.Label(
-            monitor_frame,
-            text="Progress monitoring features coming soon...",
-            font=("Segoe UI", 11),
-            bg="white"
-        ).pack(pady=50)
+            header_frame,
+            text=f"🎯 {member.name}'s Goal Progress",
+            font=("Segoe UI", 16, "bold"),
+            bg=self.colors['accent'],
+            fg="white",
+            pady=10
+        ).pack()
+        
+        # Member info
+        info_frame = tk.Frame(scrollable_frame, bg="white")
+        info_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        info_text = f"Age: {member.age} | Membership: {member.membership_type} | Fitness Goal: {member.fitness_goals}"
+        tk.Label(info_frame, text=info_text, font=("Segoe UI", 11), bg="white", fg="gray").pack()
+        
+        # Goals display
+        if hasattr(member, "goals") and member.goals:
+            goals_frame = tk.Frame(scrollable_frame, bg="white")
+            goals_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+            
+            for i, goal in enumerate(member.goals):
+                goal_container = tk.LabelFrame(
+                    goals_frame,
+                    text=f"Goal #{i+1}: {goal.get('goal_type', 'Unknown Goal')}",
+                    font=("Segoe UI", 12, "bold"),
+                    bg="white",
+                    fg=self.colors['primary']
+                )
+                goal_container.pack(fill=tk.X, pady=10)
+                
+                self._create_goal_progress_widget(goal_container, goal, compact=False)
+                
+                # Update progress button
+                update_frame = tk.Frame(goal_container, bg="white")
+                update_frame.pack(fill=tk.X, padx=10, pady=10)
+                
+                def create_update_function(current_goal):
+                    def update_progress():
+                        self._update_goal_progress(current_goal, member)
+                    return update_progress
+                
+                self._create_styled_button(
+                    update_frame, "📈 Update Progress", 
+                    create_update_function(goal), self.colors['success']
+                ).pack(side=tk.LEFT, padx=5)
+        else:
+            no_goals_frame = tk.Frame(scrollable_frame, bg="white")
+            no_goals_frame.pack(expand=True, fill=tk.BOTH)
+            
+            tk.Label(
+                no_goals_frame,
+                text="No goals set for this member",
+                font=("Segoe UI", 14),
+                bg="white",
+                fg="gray"
+            ).pack(expand=True)
+            
+            tk.Label(
+                no_goals_frame,
+                text="Visit the 'Set Goals' tab to create goals for this member",
+                font=("Segoe UI", 11),
+                bg="white",
+                fg="gray"
+            ).pack()
+        
+        # Update scroll region
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_frame, width=event.width)
+        
+        scrollable_frame.bind("<Configure>", configure_scroll_region)
+        canvas.bind('<Configure>', configure_scroll_region)
+
+    def _create_goal_progress_widget(self, parent, goal, compact=False):
+        """Create a visual progress widget for a goal"""
+        progress = goal.get("progress", 0)
+        target = goal.get("target", "N/A")
+        created_date = goal.get("created", datetime.now())
+        
+        # Main container
+        widget_frame = tk.Frame(parent, bg="white", relief=tk.GROOVE, bd=1)
+        widget_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        if not compact:
+            # Goal details
+            details_frame = tk.Frame(widget_frame, bg="white")
+            details_frame.pack(fill=tk.X, padx=10, pady=5)
+            
+            tk.Label(details_frame, text=f"Target: {target}", 
+                   font=("Segoe UI", 11, "bold"), bg="white").pack(anchor=tk.W)
+            
+            tk.Label(details_frame, text=f"Created: {created_date.strftime('%Y-%m-%d')}", 
+                   font=("Segoe UI", 10), bg="white", fg="gray").pack(anchor=tk.W)
+        
+        # Progress bar container
+        progress_container = tk.Frame(widget_frame, bg="white")
+        progress_container.pack(fill=tk.X, padx=10, pady=5)
+        
+        # Progress label
+        progress_label_frame = tk.Frame(progress_container, bg="white")
+        progress_label_frame.pack(fill=tk.X, pady=2)
+        
+        tk.Label(progress_label_frame, text="Progress:", font=("Segoe UI", 10, "bold"), 
+               bg="white").pack(side=tk.LEFT)
+        
+        tk.Label(progress_label_frame, text=f"{progress:.1f}%", 
+               font=("Segoe UI", 10, "bold"), bg="white", 
+               fg=self.colors['success'] if progress >= 100 else self.colors['accent']).pack(side=tk.RIGHT)
+        
+        # Progress bar
+        progress_bar_frame = tk.Frame(progress_container, bg=self.colors['light'], 
+                                    relief=tk.SUNKEN, bd=2, height=20)
+        progress_bar_frame.pack(fill=tk.X, pady=2)
+        progress_bar_frame.pack_propagate(False)
+        
+        # Calculate progress bar width (max 100%)
+        bar_width_percent = min(progress, 100)
+        
+        # Color based on progress
+        if progress >= 100:
+            bar_color = self.colors['success']
+        elif progress >= 75:
+            bar_color = self.colors['warning']
+        elif progress >= 50:
+            bar_color = self.colors['accent']
+        else:
+            bar_color = self.colors['danger']
+        
+        # Progress fill
+        if bar_width_percent > 0:
+            progress_fill = tk.Frame(progress_bar_frame, bg=bar_color, height=16)
+            progress_fill.place(x=2, y=2, relwidth=bar_width_percent/100, height=16)
+        
+        # Status indicator
+        status_frame = tk.Frame(widget_frame, bg="white")
+        status_frame.pack(fill=tk.X, padx=10, pady=2)
+        
+        if progress >= 100:
+            status_text = "✅ Completed"
+            status_color = self.colors['success']
+        elif progress >= 75:
+            status_text = "🎯 Almost There"
+            status_color = self.colors['warning']
+        elif progress >= 25:
+            status_text = "📈 In Progress"
+            status_color = self.colors['accent']
+        else:
+            status_text = "🚀 Getting Started"
+            status_color = self.colors['danger']
+        
+        tk.Label(status_frame, text=status_text, font=("Segoe UI", 9), 
+               bg="white", fg=status_color).pack(anchor=tk.W)
+
+    def _update_goal_progress(self, goal, member):
+        """Update progress for a specific goal"""
+        update_window = tk.Toplevel(self.root)
+        update_window.title("Update Goal Progress")
+        update_window.geometry("400x300")
+        update_window.configure(bg=self.colors['light'])
+        update_window.transient(self.root)
+        update_window.grab_set()
+        
+        # Center the window
+        update_window.geometry("+%d+%d" % (self.root.winfo_rootx() + 100, self.root.winfo_rooty() + 100))
+        
+        # Header
+        header_frame = tk.Frame(update_window, bg=self.colors['success'], height=60)
+        header_frame.pack(fill=tk.X)
+        header_frame.pack_propagate(False)
+        
+        tk.Label(
+            header_frame,
+            text="📈 Update Goal Progress",
+            font=("Segoe UI", 16, "bold"),
+            bg=self.colors['success'],
+            fg=self.colors['white']
+        ).pack(expand=True)
+        
+        # Form
+        form_frame = tk.Frame(update_window, bg=self.colors['white'], padx=30, pady=20)
+        form_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Goal info
+        tk.Label(form_frame, text=f"Goal: {goal.get('goal_type', 'Unknown')}", 
+               font=("Segoe UI", 12, "bold"), bg=self.colors['white']).pack(anchor=tk.W, pady=5)
+        
+        tk.Label(form_frame, text=f"Target: {goal.get('target', 'N/A')}", 
+               font=("Segoe UI", 11), bg=self.colors['white']).pack(anchor=tk.W, pady=2)
+        
+        tk.Label(form_frame, text=f"Current Progress: {goal.get('progress', 0):.1f}%", 
+               font=("Segoe UI", 11), bg=self.colors['white']).pack(anchor=tk.W, pady=2)
+        
+        # Progress input
+        tk.Label(form_frame, text="New Progress (%):", font=("Segoe UI", 11, "bold"), 
+               bg=self.colors['white']).pack(anchor=tk.W, pady=(20, 5))
+        
+        progress_var = tk.DoubleVar(value=goal.get('progress', 0))
+        progress_entry = tk.Entry(form_frame, textvariable=progress_var, font=("Segoe UI", 11), width=20)
+        progress_entry.pack(anchor=tk.W, pady=5)
+        
+        # Progress slider for easier input
+        tk.Label(form_frame, text="Or use slider:", font=("Segoe UI", 10), 
+               bg=self.colors['white']).pack(anchor=tk.W, pady=(10, 2))
+        
+        progress_scale = tk.Scale(form_frame, from_=0, to=100, orient=tk.HORIZONTAL, 
+                                variable=progress_var, bg=self.colors['white'])
+        progress_scale.pack(fill=tk.X, pady=5)
+        
+        # Buttons
+        button_frame = tk.Frame(form_frame, bg=self.colors['white'])
+        button_frame.pack(pady=20)
+        
+        def save_progress():
+            try:
+                new_progress = progress_var.get()
+                if 0 <= new_progress <= 100:
+                    goal["progress"] = new_progress
+                    messagebox.showinfo("Success", f"Progress updated to {new_progress:.1f}%!")
+                    update_window.destroy()
+                    # Refresh the progress display
+                    if hasattr(self, '_create_monitor_progress_tab'):
+                        # Find the current content frame and refresh
+                        for widget in self.content_frame.winfo_children():
+                            if isinstance(widget, tk.Frame):
+                                for child in widget.winfo_children():
+                                    if hasattr(child, 'winfo_children'):
+                                        # This is a simple refresh - in a real app you'd want more sophisticated state management
+                                        pass
+                else:
+                    messagebox.showwarning("Invalid Input", "Progress must be between 0 and 100%")
+            except ValueError:
+                messagebox.showerror("Error", "Please enter a valid number")
+        
+        self._create_styled_button(
+            button_frame, "💾 Update Progress", save_progress, self.colors['success']
+        ).pack(side=tk.LEFT, padx=5)
+        
+        self._create_styled_button(
+            button_frame, "❌ Cancel", update_window.destroy, self.colors['danger']
+        ).pack(side=tk.LEFT, padx=5)
 
     def show_nutrition_tracking(self):
         self._clear_content_frame()
@@ -2608,163 +2977,6 @@ class SmartFitnessApp:
                 medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉"
                 tk.Label(performer_frame, text=f"{medal} {member_data['name']}: {member_data['calories']:,} calories", 
                        font=("Segoe UI", 11), bg=self.colors['light']).pack(anchor=tk.W, padx=10, pady=2)
-        
-        # Update scroll region
-        def configure_scroll_region(event):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-            canvas.itemconfig(canvas_frame, width=event.width)
-        
-        scrollable_frame.bind("<Configure>", configure_scroll_region)
-        canvas.bind('<Configure>', configure_scroll_region)
-
-    def _create_business_analytics_report(self, parent):
-        """Create enhanced business analytics report"""
-        # Create scrollable frame
-        canvas = tk.Canvas(parent, bg=self.colors['white'])
-        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas, bg=self.colors['white'])
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        
-        # Report header
-        header_frame = tk.Frame(scrollable_frame, bg=self.colors['danger'], relief=tk.RAISED, bd=3)
-        header_frame.pack(fill=tk.X, padx=20, pady=20)
-        
-        tk.Label(
-            header_frame,
-            text="💼 Business Analytics Report",
-            font=("Segoe UI", 20, "bold"),
-            bg=self.colors['danger'],
-            fg="white",
-            pady=15
-        ).pack()
-        
-        # Business statistics
-        members = self.system.view_members()
-        total_members = len(members)
-        total_revenue = sum(t.amount_paid for t in self.system.transactions)
-        total_classes = len(self.system.fitness_classes)
-        
-        # Membership breakdown
-        membership_counts = {"Basic": 0, "Premium": 0, "VIP": 0}
-        membership_revenue = {"Basic": 0, "Premium": 0, "VIP": 0}
-        
-        for member in members:
-            if member.membership_type in membership_counts:
-                membership_counts[member.membership_type] += 1
-        
-        for transaction in self.system.transactions:
-            if hasattr(transaction, 'member') and hasattr(transaction.member, 'membership_type'):
-                m_type = transaction.member.membership_type
-                if m_type in membership_revenue:
-                    membership_revenue[m_type] += transaction.amount_paid
-        
-        # Business Metrics Cards
-        metrics_frame = tk.Frame(scrollable_frame, bg=self.colors['white'])
-        metrics_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        tk.Label(metrics_frame, text="💰 Business Overview", font=("Segoe UI", 16, "bold"), 
-                bg=self.colors['white'], fg=self.colors['primary']).pack(anchor=tk.W, pady=10)
-        
-        metrics_grid = tk.Frame(metrics_frame, bg=self.colors['white'])
-        metrics_grid.pack(fill=tk.X)
-        
-        avg_revenue_per_member = total_revenue / max(1, total_members)
-        
-        business_metrics = [
-            ("Total Members", total_members, "👥", self.colors['success']),
-            ("Total Revenue", f"${total_revenue:.2f}", "💰", self.colors['warning']),
-            ("Avg Revenue/Member", f"${avg_revenue_per_member:.2f}", "📊", self.colors['accent']),
-            ("Active Classes", total_classes, "🏃", self.colors['danger'])
-        ]
-        
-        for i, (label, value, icon, color) in enumerate(business_metrics):
-            metric_card = tk.Frame(metrics_grid, bg=color, relief=tk.RAISED, bd=3)
-            metric_card.grid(row=0, column=i, padx=10, pady=10, ipadx=20, ipady=15, sticky="ew")
-            
-            tk.Label(metric_card, text=icon, font=("Segoe UI", 24), bg=color, fg="white").pack()
-            tk.Label(metric_card, text=str(value), font=("Segoe UI", 16, "bold"), bg=color, fg="white").pack()
-            tk.Label(metric_card, text=label, font=("Segoe UI", 10), bg=color, fg="white").pack()
-            
-        for i in range(4):
-            metrics_grid.grid_columnconfigure(i, weight=1)
-        
-        # Membership Distribution with Visuals
-        membership_frame = tk.LabelFrame(
-            scrollable_frame,
-            text="🏅 Membership Distribution",
-            font=("Segoe UI", 14, "bold"),
-            bg=self.colors['white'],
-            fg=self.colors['primary'],
-            relief=tk.GROOVE,
-            bd=2
-        )
-        membership_frame.pack(fill=tk.X, padx=20, pady=15)
-        
-        colors = [self.colors['success'], self.colors['warning'], self.colors['danger']]
-        
-        for i, (membership_type, count) in enumerate(membership_counts.items()):
-            percentage = (count / max(1, total_members)) * 100
-            revenue = membership_revenue[membership_type]
-            
-            membership_row = tk.Frame(membership_frame, bg=self.colors['white'])
-            membership_row.pack(fill=tk.X, padx=15, pady=5)
-            
-            # Membership type
-            type_frame = tk.Frame(membership_row, bg=colors[i], width=100, height=30)
-            type_frame.pack(side=tk.LEFT, padx=5)
-            type_frame.pack_propagate(False)
-            
-            tk.Label(type_frame, text=membership_type, font=("Segoe UI", 10, "bold"), 
-                    bg=colors[i], fg="white").pack(expand=True)
-            
-            # Stats
-            stats_frame = tk.Frame(membership_row, bg=self.colors['white'])
-            stats_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
-            
-            tk.Label(stats_frame, text=f"{count} members ({percentage:.1f}%)", 
-                    font=("Segoe UI", 11, "bold"), bg=self.colors['white']).pack(anchor=tk.W)
-            tk.Label(stats_frame, text=f"Revenue: ${revenue:.2f}", 
-                    font=("Segoe UI", 10), bg=self.colors['white'], fg="gray").pack(anchor=tk.W)
-        
-        # Revenue Analysis
-        revenue_frame = tk.LabelFrame(
-            scrollable_frame,
-            text="💵 Revenue Analysis",
-            font=("Segoe UI", 14, "bold"),
-            bg=self.colors['white'],
-            fg=self.colors['primary'],
-            relief=tk.GROOVE,
-            bd=2
-        )
-        revenue_frame.pack(fill=tk.X, padx=20, pady=15)
-        
-        if total_revenue > 0:
-            for membership_type, revenue in membership_revenue.items():
-                if revenue > 0:
-                    percentage = (revenue / total_revenue) * 100
-                    
-                    revenue_row = tk.Frame(revenue_frame, bg=self.colors['white'])
-                    revenue_row.pack(fill=tk.X, padx=15, pady=3)
-                    
-                    tk.Label(revenue_row, text=f"{membership_type} Revenue:", font=("Segoe UI", 11, "bold"), 
-                            bg=self.colors['white'], width=20, anchor="w").pack(side=tk.LEFT)
-                    
-                    # Visual revenue bar
-                    bar_frame = tk.Frame(revenue_row, bg=self.colors['light'], relief=tk.SUNKEN, bd=1)
-                    bar_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
-                    
-                    bar_width = int((percentage / 100) * 200)
-                    color = colors[list(membership_revenue.keys()).index(membership_type)]
-                    progress_bar = tk.Frame(bar_frame, bg=color, height=20, width=bar_width)
-                    progress_bar.pack(side=tk.LEFT, pady=2)
-                    
-                    tk.Label(revenue_row, text=f"${revenue:.2f} ({percentage:.1f}%)", 
-                            font=("Segoe UI", 10), bg=self.colors['white']).pack(side=tk.RIGHT, padx=10)
         
         # Update scroll region
         def configure_scroll_region(event):
