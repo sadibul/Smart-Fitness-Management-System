@@ -826,7 +826,7 @@ class SmartFitnessApp:
             'padx': 25,
             'cursor': "hand2",
             'relief': tk.FLAT,
-            'width': 18,
+            'width': 20,
             'height': 2
         }
         
@@ -848,10 +848,8 @@ class SmartFitnessApp:
                 self._create_workout_log_tab(content_frame)
             elif view_name == "workout_history":
                 self._create_workout_history_tab(content_frame)
-            elif view_name == "exercise_library":
-                self._create_exercise_library_tab(content_frame)
         
-        # Create navigation buttons with modern styling
+        # Create navigation buttons with modern styling (removed exercise library)
         log_workout_btn = tk.Button(
             nav_frame,
             text="📝 Log Workout",
@@ -872,21 +870,10 @@ class SmartFitnessApp:
         )
         workout_history_btn.pack(side=tk.LEFT, padx=10, pady=15)
         
-        exercise_library_btn = tk.Button(
-            nav_frame,
-            text="📚 Exercise Library",
-            command=lambda: switch_view("exercise_library"),
-            bg=self.colors['light'],
-            fg=self.colors['text'],
-            **button_style
-        )
-        exercise_library_btn.pack(side=tk.LEFT, padx=10, pady=15)
-        
         # Store button references for style updates
         button_views = [
             (log_workout_btn, "log_workout"),
-            (workout_history_btn, "workout_history"),
-            (exercise_library_btn, "exercise_library")
+            (workout_history_btn, "workout_history")
         ]
         
         # Add hover effects to buttons
@@ -906,7 +893,6 @@ class SmartFitnessApp:
         
         # Apply hover effects
         create_hover_effect(workout_history_btn, "workout_history")
-        create_hover_effect(exercise_library_btn, "exercise_library")
         
         # Add visual separator
         separator = tk.Frame(nav_frame, bg=self.colors['accent'], height=3)
@@ -1803,7 +1789,7 @@ class SmartFitnessApp:
             "Protein": 80,
             "Carbs": 80,
             "Fat": 80,
-            "Notes": 150
+ "Notes": 150
         }
         
         for col in columns:
@@ -2193,84 +2179,184 @@ class SmartFitnessApp:
         self._create_comprehensive_fitness_report(content_frame)
 
     def _create_comprehensive_fitness_report(self, parent):
-        """Create comprehensive fitness report with real data"""
-        report_frame = tk.Frame(parent, bg=self.colors['white'])
-        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        """Create comprehensive fitness report with enhanced visualizations"""
+        # Create scrollable frame for better content management
+        canvas = tk.Canvas(parent, bg=self.colors['white'])
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['white'])
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        
+        # Report header with enhanced styling
+        header_frame = tk.Frame(scrollable_frame, bg=self.colors['warning'], relief=tk.RAISED, bd=3)
+        header_frame.pack(fill=tk.X, padx=20, pady=20)
         
         tk.Label(
-            report_frame,
-            text="Comprehensive Fitness Report",
-            font=("Segoe UI", 16, "bold"),
-            bg=self.colors['white'],
-            fg=self.colors['primary']
-        ).pack(pady=10)
+            header_frame,
+            text="🏋️ Comprehensive Fitness Report",
+            font=("Segoe UI", 20, "bold"),
+            bg=self.colors['warning'],
+            fg="white",
+            pady=15
+        ).pack()
         
         # Calculate fitness statistics
         total_workouts = 0
         total_calories_burned = 0
+        total_duration = 0
         exercise_types = {}
+        member_workout_counts = {}
         
         for member in self.system.view_members():
+            member_workouts = 0
             if hasattr(member, "workouts") and member.workouts:
                 for workout in member.workouts:
                     total_workouts += 1
+                    member_workouts += 1
                     total_calories_burned += workout.get("calories", 0)
+                    total_duration += workout.get("duration", 0)
                     exercise_type = workout.get("exercise_type", "Other")
                     exercise_types[exercise_type] = exercise_types.get(exercise_type, 0) + 1
+            member_workout_counts[member.name] = member_workouts
         
-        # Display statistics
-        stats_frame = tk.LabelFrame(
-            report_frame,
-            text="Workout Statistics",
-            font=("Segoe UI", 12, "bold"),
-            bg="white",
-            fg=self.colors['primary']
-        )
-        stats_frame.pack(fill=tk.X, pady=10)
+        # Key Metrics Cards
+        metrics_frame = tk.Frame(scrollable_frame, bg=self.colors['white'])
+        metrics_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        tk.Label(stats_frame, text=f"Total Workouts: {total_workouts}", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
-        tk.Label(stats_frame, text=f"Total Calories Burned: {total_calories_burned}", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(metrics_frame, text="📊 Key Fitness Metrics", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['white'], fg=self.colors['primary']).pack(anchor=tk.W, pady=10)
         
-        if total_workouts > 0:
-            avg_calories = total_calories_burned / total_workouts
-            tk.Label(stats_frame, text=f"Average Calories per Workout: {avg_calories:.1f}", 
-                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        metrics_grid = tk.Frame(metrics_frame, bg=self.colors['white'])
+        metrics_grid.pack(fill=tk.X)
         
-        # Popular exercises
+        metrics_data = [
+            ("Total Workouts", total_workouts, "💪", self.colors['success']),
+            ("Calories Burned", f"{total_calories_burned:,}", "🔥", self.colors['danger']),
+            ("Total Duration", f"{total_duration} min", "⏱️", self.colors['accent']),
+            ("Avg per Workout", f"{total_calories_burned//max(1,total_workouts)} cal", "📈", self.colors['warning'])
+        ]
+        
+        for i, (label, value, icon, color) in enumerate(metrics_data):
+            metric_card = tk.Frame(metrics_grid, bg=color, relief=tk.RAISED, bd=3)
+            metric_card.grid(row=0, column=i, padx=10, pady=10, ipadx=20, ipady=15, sticky="ew")
+            
+            tk.Label(metric_card, text=icon, font=("Segoe UI", 24), bg=color, fg="white").pack()
+            tk.Label(metric_card, text=str(value), font=("Segoe UI", 16, "bold"), bg=color, fg="white").pack()
+            tk.Label(metric_card, text=label, font=("Segoe UI", 10), bg=color, fg="white").pack()
+            
+        for i in range(4):
+            metrics_grid.grid_columnconfigure(i, weight=1)
+        
+        # Exercise Type Analysis with Visual Bars
         if exercise_types:
-            exercises_frame = tk.LabelFrame(
-                report_frame,
-                text="Popular Exercises",
-                font=("Segoe UI", 12, "bold"),
-                bg="white",
-                fg=self.colors['primary']
+            exercise_frame = tk.LabelFrame(
+                scrollable_frame,
+                text="🎯 Exercise Type Analysis",
+                font=("Segoe UI", 14, "bold"),
+                bg=self.colors['white'],
+                fg=self.colors['primary'],
+                relief=tk.GROOVE,
+                bd=2
             )
-            exercises_frame.pack(fill=tk.X, pady=10)
+            exercise_frame.pack(fill=tk.X, padx=20, pady=15)
             
-            # Sort by workout count
-            top_by_workouts = sorted(exercise_types.items(), key=lambda x: x[1], reverse=True)[:5]
+            sorted_exercises = sorted(exercise_types.items(), key=lambda x: x[1], reverse=True)
+            max_count = max(exercise_types.values()) if exercise_types else 1
             
-            tk.Label(exercises_frame, text="Most Active Exercises:", 
+            tk.Label(exercise_frame, text="Most Active Exercises:", 
                    bg="white", font=("Segoe UI", 11, "bold")).pack(anchor=tk.W, padx=15, pady=5)
             
-            for exercise, count in top_by_workouts:
-                tk.Label(exercises_frame, text=f"• {exercise}: {count} workouts", 
-                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=25, pady=2)
+            for exercise, count in sorted_exercises:
+                exercise_row = tk.Frame(exercise_frame, bg=self.colors['white'])
+                exercise_row.pack(fill=tk.X, padx=15, pady=5)
+                
+                # Exercise name
+                tk.Label(exercise_row, text=f"{exercise}:", font=("Segoe UI", 11, "bold"), 
+                        bg=self.colors['white'], width=15, anchor="w").pack(side=tk.LEFT)
+                
+                # Progress bar visual
+                bar_frame = tk.Frame(exercise_row, bg=self.colors['light'], relief=tk.SUNKEN, bd=1)
+                bar_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+                
+                bar_width = int((count / max_count) * 200)
+                progress_bar = tk.Frame(bar_frame, bg=self.colors['accent'], height=20, width=bar_width)
+                progress_bar.pack(side=tk.LEFT, pady=2)
+                
+                # Count label
+                tk.Label(exercise_row, text=f"{count} sessions", font=("Segoe UI", 10), 
+                        bg=self.colors['white']).pack(side=tk.RIGHT, padx=10)
+        
+        # Member Activity Leaderboard
+        if member_workout_counts:
+            leaderboard_frame = tk.LabelFrame(
+                scrollable_frame,
+                text="🏆 Member Activity Leaderboard",
+                font=("Segoe UI", 14, "bold"),
+                bg=self.colors['white'],
+                fg=self.colors['primary'],
+                relief=tk.GROOVE,
+                bd=2
+            )
+            leaderboard_frame.pack(fill=tk.X, padx=20, pady=15)
+            
+            sorted_members = sorted(member_workout_counts.items(), key=lambda x: x[1], reverse=True)
+            
+            tk.Label(leaderboard_frame, text="Most Active Members (by workout count):", 
+                   font=("Segoe UI", 12, "bold"), bg=self.colors['white']).pack(anchor=tk.W, padx=15, pady=5)
+            
+            for i, (member_name, workout_count) in enumerate(sorted_members[:5], 1):
+                if workout_count > 0:
+                    member_row = tk.Frame(leaderboard_frame, bg=self.colors['light'] if i % 2 == 0 else self.colors['white'])
+                    member_row.pack(fill=tk.X, padx=10, pady=2)
+                    
+                    # Rank with medal
+                    medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
+                    tk.Label(member_row, text=medal, font=("Segoe UI", 12, "bold"), 
+                            bg=member_row.cget('bg'), width=5).pack(side=tk.LEFT, padx=5, pady=5)
+                    
+                    tk.Label(member_row, text=member_name, font=("Segoe UI", 11, "bold"), 
+                            bg=member_row.cget('bg')).pack(side=tk.LEFT, padx=10, pady=5)
+                    
+                    tk.Label(member_row, text=f"{workout_count} workouts", font=("Segoe UI", 10), 
+                            bg=member_row.cget('bg')).pack(side=tk.RIGHT, padx=10, pady=5)
+        
+        # Update scroll region
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_frame, width=event.width)
+        
+        scrollable_frame.bind("<Configure>", configure_scroll_region)
+        canvas.bind('<Configure>', configure_scroll_region)
 
     def _create_comprehensive_nutrition_report(self, parent):
-        """Create comprehensive nutrition report"""
-        report_frame = tk.Frame(parent, bg=self.colors['white'])
-        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        """Create comprehensive nutrition report with enhanced visualizations"""
+        # Create scrollable frame
+        canvas = tk.Canvas(parent, bg=self.colors['white'])
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['white'])
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        
+        # Report header
+        header_frame = tk.Frame(scrollable_frame, bg=self.colors['success'], relief=tk.RAISED, bd=3)
+        header_frame.pack(fill=tk.X, padx=20, pady=20)
         
         tk.Label(
-            report_frame,
-            text="Comprehensive Nutrition Report",
-            font=("Segoe UI", 16, "bold"),
-            bg=self.colors['white'],
-            fg=self.colors['primary']
-        ).pack(pady=10)
+            header_frame,
+            text="🥗 Comprehensive Nutrition Report",
+            font=("Segoe UI", 20, "bold"),
+            bg=self.colors['success'],
+            fg="white",
+            pady=15
+        ).pack()
         
         # Calculate nutrition statistics
         total_meals = 0
@@ -2279,150 +2365,424 @@ class SmartFitnessApp:
         total_carbs = 0
         total_fat = 0
         meal_types = {}
+        member_meal_counts = {}
         
         for member in self.system.view_members():
+            member_meals = 0
             if hasattr(member, "meals") and member.meals:
                 for meal in member.meals:
                     total_meals += 1
+                    member_meals += 1
                     total_calories += meal.get("calories", 0)
                     total_protein += meal.get("protein", 0)
                     total_carbs += meal.get("carbs", 0)
                     total_fat += meal.get("fat", 0)
                     meal_type = meal.get("meal_type", "Other")
                     meal_types[meal_type] = meal_types.get(meal_type, 0) + 1
+            member_meal_counts[member.name] = member_meals
         
-        # Display statistics
-        stats_frame = tk.LabelFrame(
-            report_frame,
-            text="Nutrition Statistics",
-            font=("Segoe UI", 12, "bold"),
-            bg="white",
-            fg=self.colors['primary']
+        # Nutrition Metrics Cards
+        metrics_frame = tk.Frame(scrollable_frame, bg=self.colors['white'])
+        metrics_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(metrics_frame, text="📊 Nutrition Overview", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['white'], fg=self.colors['primary']).pack(anchor=tk.W, pady=10)
+        
+        metrics_grid = tk.Frame(metrics_frame, bg=self.colors['white'])
+        metrics_grid.pack(fill=tk.X)
+        
+        avg_calories = total_calories // max(1, total_meals)
+        avg_protein = total_protein // max(1, total_meals)
+        
+        nutrition_metrics = [
+            ("Total Meals", total_meals, "🍽️", self.colors['success']),
+            ("Total Calories", f"{total_calories:,}", "🔥", self.colors['danger']),
+            ("Avg Calories/Meal", avg_calories, "📊", self.colors['accent']),
+            ("Total Protein", f"{total_protein}g", "💪", self.colors['warning'])
+        ]
+        
+        for i, (label, value, icon, color) in enumerate(nutrition_metrics):
+            metric_card = tk.Frame(metrics_grid, bg=color, relief=tk.RAISED, bd=3)
+            metric_card.grid(row=0, column=i, padx=10, pady=10, ipadx=20, ipady=15, sticky="ew")
+            
+            tk.Label(metric_card, text=icon, font=("Segoe UI", 24), bg=color, fg="white").pack()
+            tk.Label(metric_card, text=str(value), font=("Segoe UI", 16, "bold"), bg=color, fg="white").pack()
+            tk.Label(metric_card, text=label, font=("Segoe UI", 10), bg=color, fg="white").pack()
+            
+        for i in range(4):
+            metrics_grid.grid_columnconfigure(i, weight=1)
+        
+        # Macronutrient Breakdown
+        macro_frame = tk.LabelFrame(
+            scrollable_frame,
+            text="🥙 Macronutrient Breakdown",
+            font=("Segoe UI", 14, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary'],
+            relief=tk.GROOVE,
+            bd=2
         )
-        stats_frame.pack(fill=tk.X, pady=10)
+        macro_frame.pack(fill=tk.X, padx=20, pady=15)
         
-        tk.Label(stats_frame, text=f"Total Meals Logged: {total_meals}", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
-        tk.Label(stats_frame, text=f"Total Calories: {total_calories}", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
-        tk.Label(stats_frame, text=f"Total Protein: {total_protein}g", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
-        tk.Label(stats_frame, text=f"Total Carbohydrates: {total_carbs}g", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
-        tk.Label(stats_frame, text=f"Total Fat: {total_fat}g", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        total_macros = total_protein + total_carbs + total_fat
+        if total_macros > 0:
+            macros = [
+                ("Protein", total_protein, self.colors['danger']),
+                ("Carbohydrates", total_carbs, self.colors['warning']),
+                ("Fat", total_fat, self.colors['accent'])
+            ]
+            
+            for macro_name, amount, color in macros:
+                macro_row = tk.Frame(macro_frame, bg=self.colors['white'])
+                macro_row.pack(fill=tk.X, padx=15, pady=5)
+                
+                percentage = (amount / total_macros) * 100
+                
+                tk.Label(macro_row, text=f"{macro_name}:", font=("Segoe UI", 11, "bold"), 
+                        bg=self.colors['white'], width=15, anchor="w").pack(side=tk.LEFT)
+                
+                # Visual percentage bar
+                bar_frame = tk.Frame(macro_row, bg=self.colors['light'], relief=tk.SUNKEN, bd=1)
+                bar_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+                
+                bar_width = int((percentage / 100) * 200)
+                progress_bar = tk.Frame(bar_frame, bg=color, height=20, width=bar_width)
+                progress_bar.pack(side=tk.LEFT, pady=2)
+                
+                tk.Label(macro_row, text=f"{amount}g ({percentage:.1f}%)", font=("Segoe UI", 10), 
+                        bg=self.colors['white']).pack(side=tk.RIGHT, padx=10)
         
-        if total_meals > 0:
-            avg_calories = total_calories / total_meals
-            tk.Label(stats_frame, text=f"Average Calories per Meal: {avg_calories:.1f}", 
-                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        # Meal Type Distribution
+        if meal_types:
+            meal_type_frame = tk.LabelFrame(
+                scrollable_frame,
+                text="🍴 Meal Type Distribution",
+                font=("Segoe UI", 14, "bold"),
+                bg=self.colors['white'],
+                fg=self.colors['primary'],
+                relief=tk.GROOVE,
+                bd=2
+            )
+            meal_type_frame.pack(fill=tk.X, padx=20, pady=15)
+            
+            sorted_meal_types = sorted(meal_types.items(), key=lambda x: x[1], reverse=True)
+            
+            tk.Label(meal_type_frame, text="Meal Type Distribution:", 
+                   font=("Segoe UI", 11, "bold"), bg="white").pack(anchor=tk.W, padx=15, pady=5)
+            
+            for meal_type, count in sorted_meal_types:
+                percentage = (count / total_meals) * 100
+                
+                meal_row = tk.Frame(meal_type_frame, bg=self.colors['white'])
+                meal_row.pack(fill=tk.X, padx=15, pady=3)
+                
+                tk.Label(meal_row, text=f"{meal_type}:", font=("Segoe UI", 11, "bold"), 
+                        bg=self.colors['white'], width=15, anchor="w").pack(side=tk.LEFT)
+                
+                tk.Label(meal_row, text=f"{count} meals ({percentage:.1f}%)", font=("Segoe UI", 10), 
+                        bg=self.colors['white']).pack(side=tk.RIGHT)
+        
+        # Update scroll region
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_frame, width=event.width)
+        
+        scrollable_frame.bind("<Configure>", configure_scroll_region)
+        canvas.bind('<Configure>', configure_scroll_region)
 
     def _create_performance_analysis_report(self, parent):
-        """Create performance analysis report"""
-        report_frame = tk.Frame(parent, bg=self.colors['white'])
-        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        """Create enhanced performance analysis report"""
+        # Create scrollable frame
+        canvas = tk.Canvas(parent, bg=self.colors['white'])
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['white'])
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        
+        # Report header
+        header_frame = tk.Frame(scrollable_frame, bg=self.colors['accent'], relief=tk.RAISED, bd=3)
+        header_frame.pack(fill=tk.X, padx=20, pady=20)
         
         tk.Label(
-            report_frame,
-            text="Performance Analysis Report",
-            font=("Segoe UI", 16, "bold"),
-            bg=self.colors['white'],
-            fg=self.colors['primary']
-        ).pack(pady=10)
+            header_frame,
+            text="📈 Performance Analysis Report",
+            font=("Segoe UI", 20, "bold"),
+            bg=self.colors['accent'],
+            fg="white",
+            pady=15
+        ).pack()
         
         # Member performance analysis
         performance_data = []
+        total_active_members = 0
+        goal_completion_stats = {"completed": 0, "in_progress": 0, "total": 0}
+        
         for member in self.system.view_members():
             workout_count = len(member.workouts) if hasattr(member, "workouts") and member.workouts else 0
             total_calories = sum(w.get("calories", 0) for w in member.workouts) if hasattr(member, "workouts") and member.workouts else 0
             goal_count = len(member.goals) if hasattr(member, "goals") and member.goals else 0
             
+            if workout_count > 0:
+                total_active_members += 1
+            
+            # Goals analysis
+            if hasattr(member, "goals") and member.goals:
+                for goal in member.goals:
+                    goal_completion_stats["total"] += 1
+                    progress = goal.get("progress", 0)
+                    if progress >= 100:
+                        goal_completion_stats["completed"] += 1
+                    else:
+                        goal_completion_stats["in_progress"] += 1
+            
             performance_data.append({
                 "name": member.name,
                 "workouts": workout_count,
                 "calories": total_calories,
-                "goals": goal_count
+                "goals": goal_count,
+                "avg_calories": total_calories // max(1, workout_count)
             })
         
-        # Display top performers
-        top_frame = tk.LabelFrame(
-            report_frame,
-            text="Top Performers",
-            font=("Segoe UI", 12, "bold"),
-            bg="white",
-            fg=self.colors['primary']
+        # Performance Metrics
+        metrics_frame = tk.Frame(scrollable_frame, bg=self.colors['white'])
+        metrics_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(metrics_frame, text="🎯 Performance Metrics", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['white'], fg=self.colors['primary']).pack(anchor=tk.W, pady=10)
+        
+        metrics_grid = tk.Frame(metrics_frame, bg=self.colors['white'])
+        metrics_grid.pack(fill=tk.X)
+        
+        completion_rate = (goal_completion_stats["completed"] / max(1, goal_completion_stats["total"])) * 100
+        
+        performance_metrics = [
+            ("Active Members", total_active_members, "👥", self.colors['success']),
+            ("Total Goals", goal_completion_stats["total"], "🎯", self.colors['warning']),
+            ("Completed Goals", goal_completion_stats["completed"], "✅", self.colors['accent']),
+            ("Completion Rate", f"{completion_rate:.1f}%", "📊", self.colors['danger'])
+        ]
+        
+        for i, (label, value, icon, color) in enumerate(performance_metrics):
+            metric_card = tk.Frame(metrics_grid, bg=color, relief=tk.RAISED, bd=3)
+            metric_card.grid(row=0, column=i, padx=10, pady=10, ipadx=20, ipady=15, sticky="ew")
+            
+            tk.Label(metric_card, text=icon, font=("Segoe UI", 24), bg=color, fg="white").pack()
+            tk.Label(metric_card, text=str(value), font=("Segoe UI", 16, "bold"), bg=color, fg="white").pack()
+            tk.Label(metric_card, text=label, font=("Segoe UI", 10), bg=color, fg="white").pack()
+            
+        for i in range(4):
+            metrics_grid.grid_columnconfigure(i, weight=1)
+        
+        # Top Performers by Different Metrics
+        top_performers_frame = tk.LabelFrame(
+            scrollable_frame,
+            text="🏆 Top Performers",
+            font=("Segoe UI", 14, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary'],
+            relief=tk.GROOVE,
+            bd=2
         )
-        top_frame.pack(fill=tk.X, pady=10)
+        top_performers_frame.pack(fill=tk.X, padx=20, pady=15)
         
-        # Sort by workout count
-        top_by_workouts = sorted(performance_data, key=lambda x: x["workouts"], reverse=True)[:5]
+        # Most Workouts
+        top_by_workouts = sorted(performance_data, key=lambda x: x["workouts"], reverse=True)[:3]
         
-        tk.Label(top_frame, text="Most Active Members (by workout count):", 
-               bg="white", font=("Segoe UI", 11, "bold")).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(top_performers_frame, text="💪 Most Active (by workouts):", 
+               font=("Segoe UI", 12, "bold"), bg=self.colors['white']).pack(anchor=tk.W, padx=15, pady=5)
         
         for i, member_data in enumerate(top_by_workouts, 1):
             if member_data["workouts"] > 0:
-                tk.Label(top_frame, text=f"{i}. {member_data['name']}: {member_data['workouts']} workouts", 
-                       bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=25, pady=2)
+                performer_frame = tk.Frame(top_performers_frame, bg=self.colors['light'])
+                performer_frame.pack(fill=tk.X, padx=25, pady=2)
+                
+                medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉"
+                tk.Label(performer_frame, text=f"{medal} {member_data['name']}: {member_data['workouts']} workouts", 
+                       font=("Segoe UI", 11), bg=self.colors['light']).pack(anchor=tk.W, padx=10, pady=2)
+        
+        # Most Calories Burned
+        top_by_calories = sorted(performance_data, key=lambda x: x["calories"], reverse=True)[:3]
+        
+        tk.Label(top_performers_frame, text="🔥 Highest Calorie Burn:", 
+               font=("Segoe UI", 12, "bold"), bg=self.colors['white']).pack(anchor=tk.W, padx=15, pady=(10,5))
+        
+        for i, member_data in enumerate(top_by_calories, 1):
+            if member_data["calories"] > 0:
+                performer_frame = tk.Frame(top_performers_frame, bg=self.colors['light'])
+                performer_frame.pack(fill=tk.X, padx=25, pady=2)
+                
+                medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉"
+                tk.Label(performer_frame, text=f"{medal} {member_data['name']}: {member_data['calories']:,} calories", 
+                       font=("Segoe UI", 11), bg=self.colors['light']).pack(anchor=tk.W, padx=10, pady=2)
+        
+        # Update scroll region
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_frame, width=event.width)
+        
+        scrollable_frame.bind("<Configure>", configure_scroll_region)
+        canvas.bind('<Configure>', configure_scroll_region)
 
     def _create_business_analytics_report(self, parent):
-        """Create business analytics report"""
-        report_frame = tk.Frame(parent, bg=self.colors['white'])
-        report_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        """Create enhanced business analytics report"""
+        # Create scrollable frame
+        canvas = tk.Canvas(parent, bg=self.colors['white'])
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['white'])
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        
+        # Report header
+        header_frame = tk.Frame(scrollable_frame, bg=self.colors['danger'], relief=tk.RAISED, bd=3)
+        header_frame.pack(fill=tk.X, padx=20, pady=20)
         
         tk.Label(
-            report_frame,
-            text="Business Analytics Report",
-            font=("Segoe UI", 16, "bold"),
-            bg=self.colors['white'],
-            fg=self.colors['primary']
-        ).pack(pady=10)
+            header_frame,
+            text="💼 Business Analytics Report",
+            font=("Segoe UI", 20, "bold"),
+            bg=self.colors['danger'],
+            fg="white",
+            pady=15
+        ).pack()
         
         # Business statistics
         members = self.system.view_members()
         total_members = len(members)
         total_revenue = sum(t.amount_paid for t in self.system.transactions)
+        total_classes = len(self.system.fitness_classes)
         
         # Membership breakdown
         membership_counts = {"Basic": 0, "Premium": 0, "VIP": 0}
+        membership_revenue = {"Basic": 0, "Premium": 0, "VIP": 0}
+        
         for member in members:
             if member.membership_type in membership_counts:
                 membership_counts[member.membership_type] += 1
         
-        # Display business metrics
-        business_frame = tk.LabelFrame(
-            report_frame,
-            text="Business Metrics",
-            font=("Segoe UI", 12, "bold"),
-            bg="white",
-            fg=self.colors['primary']
-        )
-        business_frame.pack(fill=tk.X, pady=10)
+        for transaction in self.system.transactions:
+            if hasattr(transaction, 'member') and hasattr(transaction.member, 'membership_type'):
+                m_type = transaction.member.membership_type
+                if m_type in membership_revenue:
+                    membership_revenue[m_type] += transaction.amount_paid
         
-        tk.Label(business_frame, text=f"Total Members: {total_members}", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
-        tk.Label(business_frame, text=f"Total Revenue: ${total_revenue:.2f}", 
-               bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        # Business Metrics Cards
+        metrics_frame = tk.Frame(scrollable_frame, bg=self.colors['white'])
+        metrics_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        if total_members > 0:
-            avg_revenue = total_revenue / total_members
-            tk.Label(business_frame, text=f"Average Revenue per Member: ${avg_revenue:.2f}", 
-                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=5)
+        tk.Label(metrics_frame, text="💰 Business Overview", font=("Segoe UI", 16, "bold"), 
+                bg=self.colors['white'], fg=self.colors['primary']).pack(anchor=tk.W, pady=10)
         
-        # Membership distribution
+        metrics_grid = tk.Frame(metrics_frame, bg=self.colors['white'])
+        metrics_grid.pack(fill=tk.X)
+        
+        avg_revenue_per_member = total_revenue / max(1, total_members)
+        
+        business_metrics = [
+            ("Total Members", total_members, "👥", self.colors['success']),
+            ("Total Revenue", f"${total_revenue:.2f}", "💰", self.colors['warning']),
+            ("Avg Revenue/Member", f"${avg_revenue_per_member:.2f}", "📊", self.colors['accent']),
+            ("Active Classes", total_classes, "🏃", self.colors['danger'])
+        ]
+        
+        for i, (label, value, icon, color) in enumerate(business_metrics):
+            metric_card = tk.Frame(metrics_grid, bg=color, relief=tk.RAISED, bd=3)
+            metric_card.grid(row=0, column=i, padx=10, pady=10, ipadx=20, ipady=15, sticky="ew")
+            
+            tk.Label(metric_card, text=icon, font=("Segoe UI", 24), bg=color, fg="white").pack()
+            tk.Label(metric_card, text=str(value), font=("Segoe UI", 16, "bold"), bg=color, fg="white").pack()
+            tk.Label(metric_card, text=label, font=("Segoe UI", 10), bg=color, fg="white").pack()
+            
+        for i in range(4):
+            metrics_grid.grid_columnconfigure(i, weight=1)
+        
+        # Membership Distribution with Visuals
         membership_frame = tk.LabelFrame(
-            report_frame,
-            text="Membership Distribution",
-            font=("Segoe UI", 12, "bold"),
-            bg="white",
-            fg=self.colors['primary']
+            scrollable_frame,
+            text="🏅 Membership Distribution",
+            font=("Segoe UI", 14, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary'],
+            relief=tk.GROOVE,
+            bd=2
         )
-        membership_frame.pack(fill=tk.X, pady=10)
+        membership_frame.pack(fill=tk.X, padx=20, pady=15)
         
-        for membership_type, count in membership_counts.items():
+        colors = [self.colors['success'], self.colors['warning'], self.colors['danger']]
+        
+        for i, (membership_type, count) in enumerate(membership_counts.items()):
             percentage = (count / max(1, total_members)) * 100
-            tk.Label(membership_frame, text=f"• {membership_type}: {count} members ({percentage:.1f}%)", 
-                   bg="white", font=("Segoe UI", 11)).pack(anchor=tk.W, padx=15, pady=2)
+            revenue = membership_revenue[membership_type]
+            
+            membership_row = tk.Frame(membership_frame, bg=self.colors['white'])
+            membership_row.pack(fill=tk.X, padx=15, pady=5)
+            
+            # Membership type
+            type_frame = tk.Frame(membership_row, bg=colors[i], width=100, height=30)
+            type_frame.pack(side=tk.LEFT, padx=5)
+            type_frame.pack_propagate(False)
+            
+            tk.Label(type_frame, text=membership_type, font=("Segoe UI", 10, "bold"), 
+                    bg=colors[i], fg="white").pack(expand=True)
+            
+            # Stats
+            stats_frame = tk.Frame(membership_row, bg=self.colors['white'])
+            stats_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+            
+            tk.Label(stats_frame, text=f"{count} members ({percentage:.1f}%)", 
+                    font=("Segoe UI", 11, "bold"), bg=self.colors['white']).pack(anchor=tk.W)
+            tk.Label(stats_frame, text=f"Revenue: ${revenue:.2f}", 
+                    font=("Segoe UI", 10), bg=self.colors['white'], fg="gray").pack(anchor=tk.W)
+        
+        # Revenue Analysis
+        revenue_frame = tk.LabelFrame(
+            scrollable_frame,
+            text="💵 Revenue Analysis",
+            font=("Segoe UI", 14, "bold"),
+            bg=self.colors['white'],
+            fg=self.colors['primary'],
+            relief=tk.GROOVE,
+            bd=2
+        )
+        revenue_frame.pack(fill=tk.X, padx=20, pady=15)
+        
+        if total_revenue > 0:
+            for membership_type, revenue in membership_revenue.items():
+                if revenue > 0:
+                    percentage = (revenue / total_revenue) * 100
+                    
+                    revenue_row = tk.Frame(revenue_frame, bg=self.colors['white'])
+                    revenue_row.pack(fill=tk.X, padx=15, pady=3)
+                    
+                    tk.Label(revenue_row, text=f"{membership_type} Revenue:", font=("Segoe UI", 11, "bold"), 
+                            bg=self.colors['white'], width=20, anchor="w").pack(side=tk.LEFT)
+                    
+                    # Visual revenue bar
+                    bar_frame = tk.Frame(revenue_row, bg=self.colors['light'], relief=tk.SUNKEN, bd=1)
+                    bar_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+                    
+                    bar_width = int((percentage / 100) * 200)
+                    color = colors[list(membership_revenue.keys()).index(membership_type)]
+                    progress_bar = tk.Frame(bar_frame, bg=color, height=20, width=bar_width)
+                    progress_bar.pack(side=tk.LEFT, pady=2)
+                    
+                    tk.Label(revenue_row, text=f"${revenue:.2f} ({percentage:.1f}%)", 
+                            font=("Segoe UI", 10), bg=self.colors['white']).pack(side=tk.RIGHT, padx=10)
+        
+        # Update scroll region
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_frame, width=event.width)
+        
+        scrollable_frame.bind("<Configure>", configure_scroll_region)
+        canvas.bind('<Configure>', configure_scroll_region)
 
 def main():
     try:
