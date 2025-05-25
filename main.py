@@ -312,17 +312,25 @@ class SmartFitnessApp:
             
     def _create_sample_data(self):
         """Create enhanced sample data with workouts and goals"""
-        # Create sample members
+        import uuid
+        
+        # Create sample members with more variety
         member1 = Member("M001", "John Doe", 30, "Premium", "Weight Loss")
         member2 = Member("M002", "Jane Smith", 25, "Basic", "Muscle Gain")
         member3 = Member("M003", "Mike Johnson", 35, "VIP", "Endurance")
+        member4 = Member("M004", "Sarah Wilson", 28, "Premium", "General Fitness")
+        member5 = Member("M005", "David Brown", 42, "Basic", "Weight Loss")
+        member6 = Member("M006", "Emily Davis", 31, "VIP", "Muscle Gain")
+        member7 = Member("M007", "Alex Chen", 26, "Premium", "Endurance")
         
-        self.system.register_member(member1)
-        self.system.register_member(member2)
-        self.system.register_member(member3)
+        # Register all members
+        for member in [member1, member2, member3, member4, member5, member6, member7]:
+            self.system.register_member(member)
         
-        # Add workout data with proper datetime objects
+        # Add comprehensive workout data
         current_time = datetime.now()
+        
+        # John Doe's workouts (Weight Loss focused)
         member1.workouts = [
             {
                 "id": str(uuid.uuid4()),
@@ -330,88 +338,528 @@ class SmartFitnessApp:
                 "exercise_type": "Running",
                 "duration": 30,
                 "calories": 350,
-                "notes": "Morning run"
+                "intensity": "High",
+                "notes": "Morning run in the park"
             },
             {
                 "id": str(uuid.uuid4()),
                 "date": current_time - timedelta(days=3),
-                "exercise_type": "Weight Lifting",
+                "exercise_type": "HIIT",
+                "duration": 25,
+                "calories": 300,
+                "intensity": "Very High",
+                "notes": "High intensity interval training"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=5),
+                "exercise_type": "Cycling",
                 "duration": 45,
-                "calories": 200,
-                "notes": "Upper body workout"
+                "calories": 400,
+                "intensity": "Moderate",
+                "notes": "Stationary bike workout"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=7),
+                "exercise_type": "Swimming",
+                "duration": 40,
+                "calories": 380,
+                "intensity": "High",
+                "notes": "Swimming laps for cardio"
             }
         ]
         
+        # Jane Smith's workouts (Muscle Gain focused)
         member2.workouts = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "exercise_type": "Weight Lifting",
+                "duration": 60,
+                "calories": 250,
+                "intensity": "High",
+                "notes": "Upper body strength training"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=2),
+                "exercise_type": "Weight Lifting",
+                "duration": 55,
+                "calories": 240,
+                "intensity": "High",
+                "notes": "Lower body workout - squats and deadlifts"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=4),
+                "exercise_type": "CrossFit",
+                "duration": 50,
+                "calories": 300,
+                "intensity": "Very High",
+                "notes": "CrossFit WOD - intense session"
+            }
+        ]
+        
+        # Mike Johnson's workouts (Endurance focused)
+        member3.workouts = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "exercise_type": "Running",
+                "duration": 60,
+                "calories": 550,
+                "intensity": "Moderate",
+                "notes": "Long distance run - 10km"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=3),
+                "exercise_type": "Cycling",
+                "duration": 90,
+                "calories": 650,
+                "intensity": "Moderate",
+                "notes": "Endurance cycling session"
+            }
+        ]
+        
+        # Sarah Wilson's workouts (General Fitness)
+        member4.workouts = [
             {
                 "id": str(uuid.uuid4()),
                 "date": current_time - timedelta(days=2),
                 "exercise_type": "Yoga",
-                "duration": 60,
+                "duration": 45,
+                "calories": 150,
+                "intensity": "Low",
+                "notes": "Relaxing yoga session"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=4),
+                "exercise_type": "Pilates",
+                "duration": 50,
                 "calories": 180,
-                "notes": "Relaxing session"
+                "intensity": "Moderate",
+                "notes": "Core strengthening pilates"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=6),
+                "exercise_type": "Dance",
+                "duration": 40,
+                "calories": 200,
+                "intensity": "Moderate",
+                "notes": "Zumba dance class"
             }
         ]
         
-        # Add goals with proper datetime objects
+        # David Brown's workouts
+        member5.workouts = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "exercise_type": "Weight Lifting",
+                "duration": 45,
+                "calories": 220,
+                "intensity": "Moderate",
+                "notes": "Basic strength training"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=3),
+                "exercise_type": "Running",
+                "duration": 25,
+                "calories": 280,
+                "intensity": "High",
+                "notes": "Short intense run"
+            }
+        ]
+        
+        # Emily Davis's workouts
+        member6.workouts = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=2),
+                "exercise_type": "Boxing",
+                "duration": 40,
+                "calories": 320,
+                "intensity": "Very High",
+                "notes": "Boxing workout for strength"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=4),
+                "exercise_type": "Weight Lifting",
+                "duration": 50,
+                "calories": 230,
+                "intensity": "High",
+                "notes": "Full body strength training"
+            }
+        ]
+        
+        # Alex Chen's workouts
+        member7.workouts = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "exercise_type": "Swimming",
+                "duration": 50,
+                "calories": 450,
+                "intensity": "High",
+                "notes": "Endurance swimming"
+            }
+        ]
+        
+        # Add comprehensive goals data
         member1.goals = [
             {
                 "id": str(uuid.uuid4()),
+                "goal_type": "Weight Loss",
+                "target": "Lose 10 kg",
+                "start_value": "0",
+                "duration": 12,
+                "duration_unit": "Weeks",
+                "created": current_time - timedelta(days=14),
+                "end_date": current_time + timedelta(weeks=10),
+                "progress": 35.0
+            },
+            {
+                "id": str(uuid.uuid4()),
                 "goal_type": "Calories to Burn",
-                "target": "2000",
+                "target": "5000 calories per month",
                 "start_value": "0",
                 "duration": 4,
                 "duration_unit": "Weeks",
-                "created": current_time - timedelta(days=5),
-                "end_date": current_time + timedelta(weeks=4),
-                "progress": 27.5
+                "created": current_time - timedelta(days=7),
+                "end_date": current_time + timedelta(weeks=3),
+                "progress": 68.0
             }
         ]
         
-        # Add meals with proper datetime objects
+        member2.goals = [
+            {
+                "id": str(uuid.uuid4()),
+                "goal_type": "Muscle Gain",
+                "target": "Gain 5 kg muscle mass",
+                "start_value": "0",
+                "duration": 16,
+                "duration_unit": "Weeks",
+                "created": current_time - timedelta(days=21),
+                "end_date": current_time + timedelta(weeks=13),
+                "progress": 25.0
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "goal_type": "Strength",
+                "target": "Bench press 80kg",
+                "start_value": "60kg",
+                "duration": 8,
+                "duration_unit": "Weeks",
+                "created": current_time - timedelta(days=10),
+                "end_date": current_time + timedelta(weeks=6),
+                "progress": 50.0
+            }
+        ]
+        
+        member3.goals = [
+            {
+                "id": str(uuid.uuid4()),
+                "goal_type": "Endurance",
+                "target": "Run 21km marathon",
+                "start_value": "5km",
+                "duration": 20,
+                "duration_unit": "Weeks",
+                "created": current_time - timedelta(days=28),
+                "end_date": current_time + timedelta(weeks=16),
+                "progress": 45.0
+            }
+        ]
+        
+        member4.goals = [
+            {
+                "id": str(uuid.uuid4()),
+                "goal_type": "General Fitness",
+                "target": "Exercise 4 times per week",
+                "start_value": "2 times",
+                "duration": 8,
+                "duration_unit": "Weeks",
+                "created": current_time - timedelta(days=14),
+                "end_date": current_time + timedelta(weeks=6),
+                "progress": 75.0
+            }
+        ]
+        
+        member5.goals = [
+            {
+                "id": str(uuid.uuid4()),
+                "goal_type": "Weight Loss",
+                "target": "Lose 15 kg",
+                "start_value": "0",
+                "duration": 24,
+                "duration_unit": "Weeks",
+                "created": current_time - timedelta(days=7),
+                "end_date": current_time + timedelta(weeks=23),
+                "progress": 15.0
+            }
+        ]
+        
+        member6.goals = [
+            {
+                "id": str(uuid.uuid4()),
+                "goal_type": "Muscle Gain",
+                "target": "Increase muscle mass by 8%",
+                "start_value": "0%",
+                "duration": 20,
+                "duration_unit": "Weeks",
+                "created": current_time - timedelta(days=35),
+                "end_date": current_time + timedelta(weeks=15),
+                "progress": 62.5
+            }
+        ]
+        
+        member7.goals = [
+            {
+                "id": str(uuid.uuid4()),
+                "goal_type": "Endurance",
+                "target": "Complete triathlon",
+                "start_value": "Basic fitness",
+                "duration": 32,
+                "duration_unit": "Weeks",
+                "created": current_time - timedelta(days=21),
+                "end_date": current_time + timedelta(weeks=29),
+                "progress": 30.0
+            }
+        ]
+        
+        # Add comprehensive meal data
         member1.meals = [
             {
                 "id": str(uuid.uuid4()),
                 "date": current_time,
                 "meal_type": "Breakfast",
-                "food_items": "Oatmeal with fruits",
-                "calories": 350,
+                "food_items": "Oatmeal with berries and almond milk",
+                "calories": 320,
                 "protein": 12,
-                "carbs": 65,
-                "fat": 8
+                "carbs": 58,
+                "fat": 8,
+                "notes": "Healthy start to the day"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "meal_type": "Lunch",
+                "food_items": "Grilled chicken salad with quinoa",
+                "calories": 450,
+                "protein": 35,
+                "carbs": 40,
+                "fat": 15,
+                "notes": "Post-workout meal"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "meal_type": "Dinner",
+                "food_items": "Salmon with steamed vegetables",
+                "calories": 380,
+                "protein": 32,
+                "carbs": 25,
+                "fat": 18,
+                "notes": "Light dinner for weight loss"
             }
         ]
         
-        # Create trainers
+        member2.meals = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time,
+                "meal_type": "Pre-Workout",
+                "food_items": "Banana and protein shake",
+                "calories": 280,
+                "protein": 25,
+                "carbs": 35,
+                "fat": 5,
+                "notes": "Energy for strength training"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "meal_type": "Post-Workout",
+                "food_items": "Chicken breast with sweet potato",
+                "calories": 520,
+                "protein": 45,
+                "carbs": 50,
+                "fat": 12,
+                "notes": "Muscle building meal"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=2),
+                "meal_type": "Breakfast",
+                "food_items": "Scrambled eggs with whole grain toast",
+                "calories": 420,
+                "protein": 25,
+                "carbs": 35,
+                "fat": 20,
+                "notes": "High protein breakfast"
+            }
+        ]
+        
+        member3.meals = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time,
+                "meal_type": "Breakfast",
+                "food_items": "Greek yogurt with granola and fruits",
+                "calories": 350,
+                "protein": 20,
+                "carbs": 45,
+                "fat": 10,
+                "notes": "Endurance fuel"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "meal_type": "Lunch",
+                "food_items": "Pasta with lean turkey and vegetables",
+                "calories": 580,
+                "protein": 30,
+                "carbs": 75,
+                "fat": 15,
+                "notes": "Carb loading for endurance"
+            }
+        ]
+        
+        member4.meals = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time,
+                "meal_type": "Snack",
+                "food_items": "Mixed nuts and dried fruit",
+                "calories": 200,
+                "protein": 6,
+                "carbs": 20,
+                "fat": 12,
+                "notes": "Healthy snack"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time - timedelta(days=1),
+                "meal_type": "Dinner",
+                "food_items": "Vegetarian stir-fry with tofu",
+                "calories": 400,
+                "protein": 18,
+                "carbs": 45,
+                "fat": 16,
+                "notes": "Balanced vegetarian meal"
+            }
+        ]
+        
+        member5.meals = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time,
+                "meal_type": "Breakfast",
+                "food_items": "Green smoothie with protein powder",
+                "calories": 250,
+                "protein": 20,
+                "carbs": 30,
+                "fat": 5,
+                "notes": "Low calorie breakfast"
+            }
+        ]
+        
+        member6.meals = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time,
+                "meal_type": "Post-Workout",
+                "food_items": "Tuna sandwich with avocado",
+                "calories": 480,
+                "protein": 35,
+                "carbs": 40,
+                "fat": 20,
+                "notes": "Recovery meal after boxing"
+            }
+        ]
+        
+        member7.meals = [
+            {
+                "id": str(uuid.uuid4()),
+                "date": current_time,
+                "meal_type": "Lunch",
+                "food_items": "Brown rice bowl with grilled fish",
+                "calories": 520,
+                "protein": 40,
+                "carbs": 60,
+                "fat": 12,
+                "notes": "Endurance athlete meal"
+            }
+        ]
+        
+        # Create more trainers
         trainer1 = Trainer("T001", "Mike Johnson", "Yoga")
         trainer2 = Trainer("T002", "Sara Brown", "Strength Training")
         trainer3 = Trainer("T003", "Alex Wilson", "Cardio")
+        trainer4 = Trainer("T004", "Lisa Garcia", "HIIT")
+        trainer5 = Trainer("T005", "Tom Anderson", "CrossFit")
         
-        self.system.add_trainer(trainer1)
-        self.system.add_trainer(trainer2)
-        self.system.add_trainer(trainer3)
+        for trainer in [trainer1, trainer2, trainer3, trainer4, trainer5]:
+            self.system.add_trainer(trainer)
         
-        # Create fitness classes
+        # Create more fitness classes
         class1 = FitnessClass("C001", "Morning Yoga", 15, "Monday, 8:00 AM")
         class2 = FitnessClass("C002", "HIIT Training", 10, "Tuesday, 6:00 PM")
         class3 = FitnessClass("C003", "Strength Building", 12, "Wednesday, 7:00 PM")
+        class4 = FitnessClass("C004", "Cardio Blast", 20, "Thursday, 6:30 PM")
+        class5 = FitnessClass("C005", "CrossFit Intense", 8, "Friday, 5:00 PM")
+        class6 = FitnessClass("C006", "Weekend Yoga Flow", 18, "Saturday, 9:00 AM")
         
+        # Assign trainers to classes
         class1.assign_trainer(trainer1)
-        class2.assign_trainer(trainer2)
-        class3.assign_trainer(trainer3)
+        class2.assign_trainer(trainer4)
+        class3.assign_trainer(trainer2)
+        class4.assign_trainer(trainer3)
+        class5.assign_trainer(trainer5)
+        class6.assign_trainer(trainer1)
         
-        self.system.schedule_class(class1)
-        self.system.schedule_class(class2)
-        self.system.schedule_class(class3)
+        # Add enrollments to classes
+        class1.enroll_member(member1)
+        class1.enroll_member(member4)
+        class1.enroll_member(member7)
         
-        # Create transactions
-        trans1 = Transaction("T001", member1, 50.00, "Premium Membership")
-        trans2 = Transaction("T002", member2, 30.00, "Basic Membership")
-        trans3 = Transaction("T003", member3, 75.00, "VIP Membership")
+        class2.enroll_member(member1)
+        class2.enroll_member(member5)
         
-        self.system.add_transaction(trans1)
-        self.system.add_transaction(trans2)
-        self.system.add_transaction(trans3)
+        class3.enroll_member(member2)
+        class3.enroll_member(member6)
+        
+        class4.enroll_member(member3)
+        class4.enroll_member(member7)
+        
+        class5.enroll_member(member2)
+        class5.enroll_member(member6)
+        
+        for fitness_class in [class1, class2, class3, class4, class5, class6]:
+            self.system.schedule_class(fitness_class)
+        
+        # Create more transactions with variety
+        trans1 = Transaction("T001", member1, 75.00, "Premium Membership")
+        trans2 = Transaction("T002", member2, 45.00, "Basic Membership")
+        trans3 = Transaction("T003", member3, 120.00, "VIP Membership")
+        trans4 = Transaction("T004", member4, 75.00, "Premium Membership")
+        trans5 = Transaction("T005", member5, 45.00, "Basic Membership")
+        trans6 = Transaction("T006", member6, 120.00, "VIP Membership")
+        trans7 = Transaction("T007", member7, 75.00, "Premium Membership")
+        
+        # Add some additional service transactions
+        trans8 = Transaction("T008", member1, 25.00, "Personal Training Session")
+        trans9 = Transaction("T009", member2, 15.00, "Nutrition Consultation")
+        trans10 = Transaction("T010", member3, 30.00, "Massage Therapy")
+        trans11 = Transaction("T011", member4, 20.00, "Group Class Package")
+        
+        for transaction in [trans1, trans2, trans3, trans4, trans5, trans6, trans7, trans8, trans9, trans10, trans11]:
+            self.system.add_transaction(transaction)
     
     def _clear_content_frame(self):
         """Clear content frame"""
@@ -1623,9 +2071,6 @@ class SmartFitnessApp:
                    bg=color, fg="white").pack()
             tk.Label(stat_card, text=label, font=("Segoe UI", 9), 
                    bg=color, fg="white").pack()
-        
-        for i in range(4):
-            stats_grid.grid_columnconfigure(i, weight=1)
         
         # Individual member progress summary
         for member in self.system.view_members():
